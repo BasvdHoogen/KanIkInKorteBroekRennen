@@ -1,24 +1,52 @@
-<script setup xmlns="http://www.w3.org/1999/html" lang="ts">
+<script setup lang="ts">
 import {computed, onMounted, ref, Ref, watch} from 'vue'
 import LoadingWave from "@/components/Loading-wave.vue";
 import {useRoute, useRouter} from "vue-router";
 
+interface WeatherCurrent {
+  temperature_2m: number
+  apparent_temperature: number
+  windspeed_10m: number
+}
+
+interface WeatherCurrentUnits {
+  temperature_2m: string
+  apparent_temperature: string
+  windspeed_10m: string
+}
+
+interface WeatherForecast {
+  latitude: number
+  longitude: number
+  current: WeatherCurrent | null
+  current_units: WeatherCurrentUnits
+}
+
+interface KorteBroekInfoResponse {
+  weatherForecast: WeatherForecast | null
+  locationDisplayName: string | null
+  weatherCodeString: string | null
+  succesfull: boolean
+}
+
 const route = useRoute();
 const router = useRouter();
-const location: Ref<string> = ref(route.params.location);
+const initialLocation = Array.isArray(route.params.location) ? route.params.location[0] : route.params.location;
+const location: Ref<string> = ref(initialLocation ?? "");
+
+const apiBaseUrl: string = import.meta.env.VITE_API_BASE_URL;
 
 const fullFetchUri = computed(() => {
-  let baseUrl: string = "https://kortebroekinfo.azurewebsites.net/kortebroekinfo"
-  // let baseUrl: string = "http://localhost:5195/kortebroekinfo"
+  const baseUrl = `${apiBaseUrl}/kortebroekinfo`;
   return location.value ? `${baseUrl}/?location=${location.value}` : baseUrl;
 });
 
-const weatherData = ref(null)
-const locationDisplayName = ref(null)
-const successful: Ref<boolean | null> = ref<boolean>(null)
+const weatherData = ref<WeatherForecast | null>(null)
+const locationDisplayName = ref<string | null>(null)
+const successful: Ref<boolean | null> = ref<boolean | null>(null)
 const loading: Ref<boolean> = ref<boolean>(true)
 const locationInput = ref("")
-const weatherCodeString = ref(null)
+const weatherCodeString = ref<string | null>(null)
 
 onMounted(() => {
   GetWeather();
@@ -33,7 +61,7 @@ function GetWeather() {
   try{
       fetch(fullFetchUri.value)
           .then((r) => r.json())
-          .then((data) => {
+          .then((data: KorteBroekInfoResponse) => {
               loading.value = false;
               weatherData.value = data.weatherForecast;
               locationDisplayName.value = data.locationDisplayName;
@@ -70,10 +98,11 @@ function checkIfEnter(event: KeyboardEvent) {
 
 <template>
   <div style="min-height: 90vh">
-        <div><img src="/man-running-emoji-258749.png" alt="man-running-emoji-with-short-pants"
+        <div><img
+              src="/man-running-emoji-258749.png" alt="man-running-emoji-with-short-pants"
               style="width:128px;height:128px;display: flex; margin-left: auto; margin-right: auto;"></div>
     <br />
-    <input type="text" v-model="locationInput" placeholder="Zoek een locatie" v-on:keyup="checkIfEnter" /> <button @click="RedirectToLocationUri">Zoek</button>
+    <input v-model="locationInput" type="text" placeholder="Zoek een locatie" @keyup="checkIfEnter" /> <button @click="RedirectToLocationUri">Zoek</button>
     <br /><br />
 
     <h1 class="green">Kan ik in korte broek rennen?</h1>
@@ -100,7 +129,7 @@ function checkIfEnter(event: KeyboardEvent) {
               <div class="right">Temperatuur: </div><div class="left">{{ weatherData.current.temperature_2m }} {{weatherData.current_units.temperature_2m}}</div>
               <div class="right">Gevoelstemperatuur: </div><div class="left">{{ weatherData.current.apparent_temperature }} {{weatherData.current_units.apparent_temperature}}</div>
               <div class="right">Wind: </div><div class="left">{{weatherData.current.windspeed_10m}} {{weatherData.current_units.windspeed_10m}}</div>
-              <div class="right" v-if="weatherCodeString">Beschrijving: </div><div class="left">{{weatherCodeString}}</div>
+              <div v-if="weatherCodeString" class="right">Beschrijving: </div><div class="left">{{weatherCodeString}}</div>
             </div>
           </div>
       </div>
