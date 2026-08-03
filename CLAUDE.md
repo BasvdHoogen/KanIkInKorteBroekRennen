@@ -17,7 +17,7 @@ The repo root is the frontend's original identity (`vue-weather-app-try` / GitHu
 - Preview production build: `npm run preview`
 
 ### Backend (`WebApiKorteBroek/`)
-- Build: `dotnet build Solution3.sln` (or `dotnet build` from within `WebApiKorteBroek/`)
+- Build: `dotnet build KanIkInKorteBroekRennen.sln` (or `dotnet build` from within `WebApiKorteBroek/`)
 - Run (dev): `dotnet run --project WebApiKorteBroek` — serves on `http://localhost:5195` (and `https://localhost:7019` under the `https` launch profile), opening Swagger UI at `/swagger` automatically in Development.
 - Restore packages: `dotnet restore`
 
@@ -43,7 +43,7 @@ CORS is configured (policy `_policyName`) to allow the production frontend domai
 
 Swagger/OpenAPI (Swashbuckle) is enabled only when `app.Environment.IsDevelopment()`.
 
-`Solution3.sln` at the repo root ties `WebApiKorteBroek.csproj` into a Rider/Visual Studio solution alongside the frontend.
+`KanIkInKorteBroekRennen.sln` at the repo root ties `WebApiKorteBroek.csproj` into a Rider/Visual Studio solution alongside the frontend.
 
 ## Deployment
 
