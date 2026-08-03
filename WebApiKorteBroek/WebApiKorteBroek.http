@@ -1,0 +1,6 @@
+@WebApiKorteBroek_HostAddress = http://localhost:5195
+
+GET {{WebApiKorteBroek_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

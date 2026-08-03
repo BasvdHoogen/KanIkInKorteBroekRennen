@@ -1,0 +1,12 @@
+C:\Users\BaHg\AppData\Local\Temp\rider-publish11142174713584430944\WebApiKorteBroek.exe
+C:\Users\BaHg\AppData\Local\Temp\rider-publish11142174713584430944\appsettings.Development.json
+C:\Users\BaHg\AppData\Local\Temp\rider-publish11142174713584430944\appsettings.json
+C:\Users\BaHg\AppData\Local\Temp\rider-publish11142174713584430944\WebApiKorteBroek.dll
+C:\Users\BaHg\AppData\Local\Temp\rider-publish11142174713584430944\WebApiKorteBroek.deps.json
+C:\Users\BaHg\AppData\Local\Temp\rider-publish11142174713584430944\WebApiKorteBroek.runtimeconfig.json
+C:\Users\BaHg\AppData\Local\Temp\rider-publish11142174713584430944\WebApiKorteBroek.pdb
+C:\Users\BaHg\AppData\Local\Temp\rider-publish11142174713584430944\Microsoft.AspNetCore.OpenApi.dll
+C:\Users\BaHg\AppData\Local\Temp\rider-publish11142174713584430944\Microsoft.OpenApi.dll
+C:\Users\BaHg\AppData\Local\Temp\rider-publish11142174713584430944\Swashbuckle.AspNetCore.Swagger.dll
+C:\Users\BaHg\AppData\Local\Temp\rider-publish11142174713584430944\Swashbuckle.AspNetCore.SwaggerGen.dll
+C:\Users\BaHg\AppData\Local\Temp\rider-publish11142174713584430944\Swashbuckle.AspNetCore.SwaggerUI.dll
