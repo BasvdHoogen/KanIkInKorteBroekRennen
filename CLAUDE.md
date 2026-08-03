@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-This repository is the monorepo for the "Kanikinkortebroekrennen" project: a Vue 3 frontend (at the repo root) and an ASP.NET Core 8 Web API backend (`WebApiKorteBroek/`), combined via `git subtree` from two previously separate repos. It gives a location name, geocodes it via LocationIQ, and returns current weather from Open-Meteo translated into Dutch-language descriptions.
+This repository is the monorepo for the "Kanikinkortebroekrennen" project: a Vue 3 frontend (at the repo root) and an ASP.NET Core 10 Web API backend (`WebApiKorteBroek/`), combined via `git subtree` from two previously separate repos. It gives a location name, geocodes it via LocationIQ, and returns current weather from Open-Meteo translated into Dutch-language descriptions.
 
 The repo root is the frontend's original identity (`vue-weather-app-try` / GitHub repo `BasvdHoogen/KanIkRennenInKorteBroek`) — the backend was merged in as a subfolder, keeping the frontend's paths and deployment untouched.
 
@@ -13,15 +13,17 @@ The repo root is the frontend's original identity (`vue-weather-app-try` / GitHu
 ### Frontend (repo root)
 - Install deps: `npm install`
 - Dev server (hot reload): `npm run dev`
-- Production build: `npm run build` — outputs to `dist/`
+- Production build: `npm run build` — type-checks via `vue-tsc` then builds, outputs to `dist/`
 - Preview production build: `npm run preview`
+- Type-check only: `npm run type-check`
+- Lint: `npm run lint` — format: `npm run format`
 
 ### Backend (`WebApiKorteBroek/`)
 - Build: `dotnet build KanIkInKorteBroekRennen.sln` (or `dotnet build` from within `WebApiKorteBroek/`)
 - Run (dev): `dotnet run --project WebApiKorteBroek` — serves on `http://localhost:5195` (and `https://localhost:7019` under the `https` launch profile), opening Swagger UI at `/swagger` automatically in Development.
 - Restore packages: `dotnet restore`
 
-There are no test projects/lint configs for either the frontend or backend.
+There are no automated test projects for either the frontend or backend.
 
 ## Architecture
 
@@ -39,6 +41,8 @@ The entire API is implemented in a single top-level-statements file, `WebApiKort
 
 Supporting types (`LocationSuggestion`, `Address`, `LocationData`) for parsing the LocationIQ response are defined inline at the bottom of `Program.cs`, not in separate files.
 
+`GET /health` is a basic health check endpoint. `/kortebroekinfo` is fixed-window rate limited (30 req/min per the `RequireRateLimiting` policy) since it's anonymous and fans out to the paid/quota-limited LocationIQ and Open-Meteo APIs on every call.
+
 CORS is configured (policy `_policyName`) to allow the production frontend domain (`https://*.kanikinkortebroekrennen.nl`) and local dev origins (`http://localhost:*`, explicitly `:5173`/`:5174`, the typical Vite dev server ports) with any header/method.
 
 Swagger/OpenAPI (Swashbuckle) is enabled only when `app.Environment.IsDevelopment()`.
@@ -50,7 +54,7 @@ Swagger/OpenAPI (Swashbuckle) is enabled only when `app.Environment.IsDevelopmen
 The two halves deploy independently, and neither changed as part of the monorepo merge:
 
 - **Frontend**: `.github/workflows/azure-static-web-apps-jolly-beach-0d25f9a03.yml` runs on every push to `main` (and on PRs against it), building and deploying via the Azure Static Web Apps GitHub Action. `app_location` is `/` and `output_location` is `dist` — both still correct since the frontend files were not moved when the backend was merged in.
-- **Backend**: manual publish via the Rider run config `.run/Publish WebApiKorteBroek to Azure.run.xml` (Azure Web App `KorteBroekInfo` in resource group `KorteBroekRennen`, Windows, .NET 8). Not git-triggered.
+- **Backend**: `.github/workflows/backend-deploy.yml` runs on push to `main` when files under `WebApiKorteBroek/**` change (or manually via `workflow_dispatch`), publishing and deploying to the Azure Web App `KorteBroekInfo` in resource group `KorteBroekRennen` (Windows, .NET 10). The Rider run config `.run/Publish WebApiKorteBroek to Azure.run.xml` still exists for a manual/local publish if ever needed, but is no longer the primary deployment path.
 
 ## Notes
 
