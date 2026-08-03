@@ -102,8 +102,7 @@ app.MapGet("/kortebroekinfo", async Task<WeatherForcastResponse> (string locatio
             };
         }
     )
-    .WithName("KorteBroekInfo")
-    .WithOpenApi();
+    .WithName("KorteBroekInfo");
 
 app.Run();
 return;
