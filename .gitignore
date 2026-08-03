@@ -24,7 +24,11 @@ coverage
 *.suo
 *.ntvs*
 *.njsproj
-*.sln
 *.sw?
 
 *.tsbuildinfo
+
+# .NET build output
+bin/
+obj/
+*.user
