@@ -54,5 +54,5 @@ The two halves deploy independently, and neither changed as part of the monorepo
 
 ## Notes
 
-- The LocationIQ API key is currently hardcoded in `Program.cs` (`GetCoordinatesOfLocation`). Treat this as an existing issue rather than a pattern to replicate in new code.
+- The LocationIQ API key is read from configuration key `LocationIQ:ApiKey` (`Program.cs`, passed into `GetCoordinatesOfLocation`) — never hardcode it. Locally it's supplied via .NET user-secrets (`dotnet user-secrets set "LocationIQ:ApiKey" "..."` from `WebApiKorteBroek/`, project's `UserSecretsId` is already set in the `.csproj`). In Azure, set it as an App Service Application Setting named `LocationIQ__ApiKey` (double underscore — Azure App Settings map to nested config via `__`).
 - The backend was previously its own git repo (nested inside a separate, non-git `Solution3` folder) with no remote; its single-commit history was preserved via `git subtree add` when merging.

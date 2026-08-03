@@ -6,6 +6,7 @@ using WebApiKorteBroek.Classes;
 
 var builder = WebApplication.CreateBuilder(args);
 const string policyName = "_policyName";
+var locationIqApiKey = builder.Configuration["LocationIQ:ApiKey"];
 string[] myAllowSpecificOrigins =
     ["https://*.kanikinkortebroekrennen.nl", "http://localhost:*", "http://localhost:5174", "http://localhost:5173"];
 
@@ -39,7 +40,7 @@ app.UseHttpsRedirection();
 
 app.MapGet("/kortebroekinfo", async Task<WeatherForcastResponse> (string location = "Eindhoven") =>
         {
-            var locationData = await GetCoordinatesOfLocation(location);
+            var locationData = await GetCoordinatesOfLocation(location, locationIqApiKey);
 
             if (locationData == null)
             {
@@ -108,7 +109,7 @@ app.Run();
 return;
 
 
-async Task<LocationData?> GetCoordinatesOfLocation(string inputLocation)
+async Task<LocationData?> GetCoordinatesOfLocation(string inputLocation, string? apiKey)
 {
     try
     {
@@ -117,7 +118,7 @@ async Task<LocationData?> GetCoordinatesOfLocation(string inputLocation)
         inputLocation = Regex.Replace(inputLocation, "([a-z])([A-Z])", "$1 $2");
         var response =
             await httpClient.GetAsync(
-                $"https://eu1.locationiq.com/v1/search?q={inputLocation}&format=json&addressdetails=1&accept-language=nl&key=pk.0d013e7ee41069cf4c54c1b82e92cb00");
+                $"https://eu1.locationiq.com/v1/search?q={inputLocation}&format=json&addressdetails=1&accept-language=nl&key={apiKey}");
 
         if (!response.IsSuccessStatusCode) return null;
         
