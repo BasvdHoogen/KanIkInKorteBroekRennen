@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This repository is the monorepo for the "Kanikinkortebroekrennen" project: a Vue 3 frontend (at the repo root) and an ASP.NET Core 8 Web API backend (`WebApiKorteBroek/`), combined via `git subtree` from two previously separate repos. It gives a location name, geocodes it via LocationIQ, and returns current weather from Open-Meteo translated into Dutch-language descriptions.
 
-The repo root is the frontend's original identity (`vue-weather-app-try` / GitHub repo `BasvdHoogen/KanIkRennenInKorteBroek`) — the backend was merged in as a subfolder, keeping the frontend's paths and deployment untouched.
+The repo root is the frontend's original identity (`vue-weather-app-try` / GitHub repo `BasvdHoogen/KanIkInKorteBroekRennen`) — the backend was merged in as a subfolder, keeping the frontend's paths and deployment untouched.
 
 ## Commands
 
