@@ -1,11 +1,14 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Text.RegularExpressions;
+using System.Threading.RateLimiting;
+using Microsoft.AspNetCore.RateLimiting;
 using OpenMeteo;
 using WebApiKorteBroek.Classes;
 
 var builder = WebApplication.CreateBuilder(args);
 const string policyName = "_policyName";
+const string RateLimitPolicyName = "fixed";
 var locationIqApiKey = builder.Configuration["LocationIQ:ApiKey"];
 string[] myAllowSpecificOrigins =
     ["https://*.kanikinkortebroekrennen.nl", "http://localhost:*", "http://localhost:5174", "http://localhost:5173"];
@@ -24,8 +27,23 @@ builder.Services.AddCors(opt =>
             .SetIsOriginAllowedToAllowWildcardSubdomains();
     });
 });
+builder.Services.AddProblemDetails();
+builder.Services.AddHttpClient();
+builder.Services.AddHealthChecks();
+builder.Services.AddRateLimiter(options =>
+{
+    options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    options.AddFixedWindowLimiter(RateLimitPolicyName, opt =>
+    {
+        opt.PermitLimit = 30;
+        opt.Window = TimeSpan.FromMinutes(1);
+        opt.QueueLimit = 0;
+    });
+});
 
 var app = builder.Build();
+
+app.UseExceptionHandler();
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -38,9 +56,13 @@ app.UseCors(policyName);
 
 app.UseHttpsRedirection();
 
-app.MapGet("/kortebroekinfo", async Task<WeatherForcastResponse> (string location = "Eindhoven") =>
+app.UseRateLimiter();
+
+app.MapHealthChecks("/health");
+
+app.MapGet("/kortebroekinfo", async Task<WeatherForcastResponse> (IHttpClientFactory httpClientFactory, string location = "Eindhoven") =>
         {
-            var locationData = await GetCoordinatesOfLocation(location, locationIqApiKey);
+            var locationData = await GetCoordinatesOfLocation(location, locationIqApiKey, httpClientFactory.CreateClient());
 
             if (locationData == null)
             {
@@ -92,7 +114,7 @@ app.MapGet("/kortebroekinfo", async Task<WeatherForcastResponse> (string locatio
             }
             catch (Exception e)
             {
-                Console.WriteLine(e);
+                app.Logger.LogError(e, "Failed to fetch weather forecast for location {Location}", location);
                 throw;
             }
             
@@ -102,30 +124,30 @@ app.MapGet("/kortebroekinfo", async Task<WeatherForcastResponse> (string locatio
             };
         }
     )
-    .WithName("KorteBroekInfo");
+    .WithName("KorteBroekInfo")
+    .RequireRateLimiting(RateLimitPolicyName);
 
 app.Run();
 return;
 
 
-async Task<LocationData?> GetCoordinatesOfLocation(string inputLocation, string? apiKey)
+async Task<LocationData?> GetCoordinatesOfLocation(string inputLocation, string? apiKey, HttpClient httpClient)
 {
     try
     {
-        using HttpClient httpClient = new HttpClient();
-
         inputLocation = Regex.Replace(inputLocation, "([a-z])([A-Z])", "$1 $2");
+        var encodedLocation = Uri.EscapeDataString(inputLocation);
         var response =
             await httpClient.GetAsync(
-                $"https://eu1.locationiq.com/v1/search?q={inputLocation}&format=json&addressdetails=1&accept-language=nl&key={apiKey}");
+                $"https://eu1.locationiq.com/v1/search?q={encodedLocation}&format=json&addressdetails=1&accept-language=nl&key={apiKey}");
 
         if (!response.IsSuccessStatusCode) return null;
-        
+
         var jsonString = await response.Content.ReadAsStringAsync();
         List<LocationSuggestion>? locationSuggestionListResult = JsonSerializer.Deserialize<List<LocationSuggestion>>(jsonString);
 
         if (locationSuggestionListResult == null) return null;
-        
+
         var locationData = new LocationData
         {
             Name = locationSuggestionListResult[0].DisplayName,
@@ -138,7 +160,7 @@ async Task<LocationData?> GetCoordinatesOfLocation(string inputLocation, string?
     }
     catch (Exception ex)
     {
-        Console.WriteLine("Exception: " + ex);
+        app.Logger.LogError(ex, "Failed to geocode location {InputLocation}", inputLocation);
     }
 
     return null;
