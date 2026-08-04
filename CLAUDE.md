@@ -17,13 +17,15 @@ The repo root is the frontend's original identity (`vue-weather-app-try` / GitHu
 - Preview production build: `npm run preview`
 - Type-check only: `npm run type-check`
 - Lint: `npm run lint` — format: `npm run format`
+- Test (Vitest): `npm run test`
 
 ### Backend (`WebApiKorteBroek/`)
 - Build: `dotnet build KanIkInKorteBroekRennen.sln` (or `dotnet build` from within `WebApiKorteBroek/`)
 - Run (dev): `dotnet run --project WebApiKorteBroek` — serves on `http://localhost:5195` (and `https://localhost:7019` under the `https` launch profile), opening Swagger UI at `/swagger` automatically in Development.
 - Restore packages: `dotnet restore`
+- Test: `dotnet test WebApiKorteBroek.Tests` (xUnit; unit tests for the services plus `WebApplicationFactory`-based integration tests of `/kortebroekinfo` and `/health`)
 
-There are no automated test projects for either the frontend or backend.
+`.github/workflows/ci.yml` runs both suites (plus lint/type-check/build) on every PR and push to `main`, independently of the deploy workflows below.
 
 ## Architecture
 
@@ -31,15 +33,15 @@ There are no automated test projects for either the frontend or backend.
 Vue 3 + Vite app (`src/`, `index.html`, `vite.config.js`). `src/App.vue` is the main component; `src/components/` holds `Loading-wave.vue` and `TheWelcome.vue`. Deployed as an Azure Static Web App.
 
 ### Backend (`WebApiKorteBroek/`)
-The entire API is implemented in a single top-level-statements file, `WebApiKorteBroek/Program.cs`, with one endpoint:
+`WebApiKorteBroek/Program.cs` wires up DI and the minimal API endpoints; the two external calls it depends on live in `WebApiKorteBroek/Services/` so they can be substituted in tests (see Testing below) — there are no `IFoo`/`Foo` interface pairs, just concrete classes:
 
 - `GET /kortebroekinfo?location={location}` — the only route. Flow:
-  1. `GetCoordinatesOfLocation(location)` calls the LocationIQ search API to geocode the free-text `location` string into a `LocationData` (lat/long/display name/country). A regex (`([a-z])([A-Z])` → inserts a space) splits camelCase location input into words before querying.
-  2. If geocoding succeeds, an `OpenMeteoClient` (from the `OpenMeteo.dotnet` NuGet package) is queried for current weather conditions (temperature, precipitation, wind, cloud cover, weather code, etc.) at those coordinates.
+  1. `LocationIqGeocodingService.GetCoordinatesAsync(location)` (`Services/LocationIqGeocodingService.cs`) calls the LocationIQ search API to geocode the free-text `location` string into a `LocationData` (lat/long/display name/country). A regex (`([a-z])([A-Z])` → inserts a space) splits camelCase location input into words before querying.
+  2. If geocoding succeeds, `OpenMeteoWeatherService.GetCurrentWeatherAsync(...)` (`Services/OpenMeteoWeatherService.cs`) wraps an `OpenMeteoClient` (from the `OpenMeteo.dotnet` NuGet package) to fetch current weather conditions (temperature, precipitation, wind, cloud cover, weather code, etc.) at those coordinates.
   3. The result is wrapped in a `WeatherForcastResponse` (`WebApiKorteBroek/Classes/WeatherForcastResponse.cs`), which also exposes a derived `WeatherCodeString` property that maps Open-Meteo's numeric weather codes to Dutch-language descriptions (e.g. `0` → "Helderblauwe lucht", `61` → "Lichte regen").
   4. On any failure (geocoding fails, weather query throws), the response has `Succesfull = false`.
 
-Supporting types (`LocationSuggestion`, `Address`, `LocationData`) for parsing the LocationIQ response are defined inline at the bottom of `Program.cs`, not in separate files.
+Supporting types (`LocationSuggestion`, `Address`, `LocationData`) for parsing the LocationIQ response live in `WebApiKorteBroek/Classes/LocationData.cs`.
 
 `GET /health` is a basic health check endpoint. `/kortebroekinfo` is fixed-window rate limited (30 req/min per the `RequireRateLimiting` policy) since it's anonymous and fans out to the paid/quota-limited LocationIQ and Open-Meteo APIs on every call.
 
@@ -47,11 +49,16 @@ CORS is configured (policy `_policyName`) to allow the production frontend domai
 
 Swagger/OpenAPI (Swashbuckle) is enabled only when `app.Environment.IsDevelopment()`.
 
-`KanIkInKorteBroekRennen.sln` at the repo root ties `WebApiKorteBroek.csproj` into a Rider/Visual Studio solution alongside the frontend.
+`Program.cs` ends with `public partial class Program { }` so `WebApplicationFactory<Program>` in the test project can reference the entry point.
+
+`KanIkInKorteBroekRennen.sln` at the repo root ties `WebApiKorteBroek.csproj` and `WebApiKorteBroek.Tests.csproj` into a Rider/Visual Studio solution alongside the frontend.
+
+### Testing (`WebApiKorteBroek.Tests/`)
+xUnit project referencing `WebApiKorteBroek.csproj`. `LocationIqGeocodingService` is tested by substituting a fake `HttpMessageHandler` (`FakeHttpMessageHandler.cs`) under its `HttpClient` — no interface needed since HTTP is its only real dependency. `OpenMeteoWeatherService.GetCurrentWeatherAsync` is `virtual` solely so Moq can mock it in `KorteBroekInfoEndpointTests` (the wrapped third-party `OpenMeteoClient` exposes no injectable `HttpClient` of its own to fake at the transport level instead). Endpoint tests use `WebApplicationFactory<Program>` + `ConfigureTestServices` to swap both dependencies before hitting `/kortebroekinfo` and `/health`.
 
 ## Deployment
 
-The two halves deploy independently, and neither changed as part of the monorepo merge:
+`.github/workflows/ci.yml` gates PRs and pushes to `main` (lint/type-check/test/build for both halves) but never deploys. The two deploy workflows below are unaffected by it and deploy independently, and neither changed as part of the monorepo merge:
 
 - **Frontend**: `.github/workflows/azure-static-web-apps-jolly-beach-0d25f9a03.yml` runs on every push to `main` (and on PRs against it), building and deploying via the Azure Static Web Apps GitHub Action. `app_location` is `/` and `output_location` is `dist` — both still correct since the frontend files were not moved when the backend was merged in.
 - **Backend**: `.github/workflows/backend-deploy.yml` runs on push to `main` when files under `WebApiKorteBroek/**` change (or manually via `workflow_dispatch`), publishing and deploying to the Azure Web App `KorteBroekInfo` in resource group `KorteBroekRennen` (Windows, .NET 10). The Rider run config `.run/Publish WebApiKorteBroek to Azure.run.xml` still exists for a manual/local publish if ever needed, but is no longer the primary deployment path.
