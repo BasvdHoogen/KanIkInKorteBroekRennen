@@ -294,18 +294,20 @@ function checkIfEnter(event: KeyboardEvent) {
     color: var(--vt-c-text-light-1);
   }
 
-  /* muted UI copy was too dim against the dark background; brighten it explicitly */
-  .search-bar input::placeholder {
-    color: rgba(235, 235, 235, 0.55);
+  /* muted UI copy was too dim against the dark background; brighten it explicitly.
+     ".page" is prefixed here so these reliably win over the base rules below,
+     regardless of source order (both sides use otherwise-identical selectors). */
+  .page .search-bar input::placeholder {
+    color: rgba(235, 235, 235, 0.75);
     opacity: 1;
   }
 
-  .pref-hint {
+  .page .pref-hint {
     color: rgba(235, 235, 235, 0.85);
     opacity: 1;
   }
 
-  .pref-note {
+  .page .pref-note {
     color: rgba(235, 235, 235, 0.65);
     opacity: 1;
   }
