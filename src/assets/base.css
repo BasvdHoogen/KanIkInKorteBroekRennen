@@ -51,7 +51,6 @@
     --color-heading: var(--vt-c-text-dark-1);
     --color-text: var(--vt-c-text-dark-2);
 
-    --accent-color: #69db7c;
     --sky-gradient: linear-gradient(180deg, #1a2a52 0%, #24345f 40%, #3a2f5c 100%);
   }
 }
