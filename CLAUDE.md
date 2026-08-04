@@ -60,7 +60,7 @@ xUnit project referencing `WebApiKorteBroek.csproj`. `LocationIqGeocodingService
 
 `.github/workflows/ci.yml` gates PRs and pushes to `main` (lint/type-check/test/build for both halves) but never deploys. The two deploy workflows below are unaffected by it and deploy independently, and neither changed as part of the monorepo merge:
 
-- **Frontend**: `.github/workflows/azure-static-web-apps-jolly-beach-0d25f9a03.yml` runs on every push to `main` (and on PRs against it), building and deploying via the Azure Static Web Apps GitHub Action. `app_location` is `/` and `output_location` is `dist` — both still correct since the frontend files were not moved when the backend was merged in.
+- **Frontend**: `.github/workflows/frontend-deploy.yml` runs on every push to `main` (and on PRs against it), building and deploying via the Azure Static Web Apps GitHub Action. `app_location` is `/` and `output_location` is `dist` — both still correct since the frontend files were not moved when the backend was merged in.
 - **Backend**: `.github/workflows/backend-deploy.yml` runs on push to `main` when files under `WebApiKorteBroek/**` change (or manually via `workflow_dispatch`), publishing and deploying to the Azure Web App `KorteBroekInfo` in resource group `KorteBroekRennen` (Windows, .NET 10). The Rider run config `.run/Publish WebApiKorteBroek to Azure.run.xml` still exists for a manual/local publish if ever needed, but is no longer the primary deployment path.
 
 ## Notes

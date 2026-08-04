@@ -39,7 +39,7 @@ There are no automated test projects for either half of the repo yet.
 
 The two halves deploy independently:
 
-- **Frontend**: `.github/workflows/azure-static-web-apps-jolly-beach-0d25f9a03.yml` deploys to Azure Static Web Apps on every push to `main`. Pull requests against `main` also trigger a build, but Azure Static Web Apps treats that as an isolated **staging** preview environment (usually linked in a PR comment) — production is only updated when a PR is actually merged.
+- **Frontend**: `.github/workflows/frontend-deploy.yml` deploys to Azure Static Web Apps on every push to `main`. Pull requests against `main` also trigger a build, but Azure Static Web Apps treats that as an isolated **staging** preview environment (usually linked in a PR comment) — production is only updated when a PR is actually merged.
 - **Backend**: `.github/workflows/backend-deploy.yml` deploys to the Azure Web App `KorteBroekInfo` on every push to `main` that touches `WebApiKorteBroek/**`, or manually via `workflow_dispatch`.
 
 ## More detail
