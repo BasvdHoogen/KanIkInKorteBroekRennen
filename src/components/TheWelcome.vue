@@ -293,6 +293,22 @@ function checkIfEnter(event: KeyboardEvent) {
   .page-sunny .verdict-text p {
     color: var(--vt-c-text-light-1);
   }
+
+  /* muted UI copy was too dim against the dark background; brighten it explicitly */
+  .search-bar input::placeholder {
+    color: rgba(235, 235, 235, 0.55);
+    opacity: 1;
+  }
+
+  .pref-hint {
+    color: rgba(235, 235, 235, 0.85);
+    opacity: 1;
+  }
+
+  .pref-note {
+    color: rgba(235, 235, 235, 0.65);
+    opacity: 1;
+  }
 }
 
 .sky-decor {
@@ -392,6 +408,11 @@ h1 {
   outline: none;
   color: var(--color-text);
   min-width: 10rem;
+}
+
+.search-bar input::placeholder {
+  color: var(--color-text);
+  opacity: 0.55;
 }
 
 .search-bar button {
