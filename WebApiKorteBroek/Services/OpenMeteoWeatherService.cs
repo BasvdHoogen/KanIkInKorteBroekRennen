@@ -17,6 +17,10 @@ public class OpenMeteoWeatherService
             // "auto" request value. We don't consume the timestamp fields downstream,
             // so a fixed, universally-resolvable zone has no functional effect.
             Timezone = "UTC",
+            // Explicit even though it's already the SDK default - makes it clear where
+            // to wire up a user-selectable unit later, and doesn't rely on the default
+            // silently staying celsius across SDK versions.
+            Temperature_Unit = TemperatureUnitType.celsius,
             Longitude = longitude,
             Latitude = latitude,
             Current = new CurrentOptions([
