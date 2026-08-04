@@ -540,7 +540,7 @@ h1 {
 
 .settings-area {
   position: fixed;
-  top: 1rem;
+  bottom: 1rem;
   right: 1rem;
   z-index: 2;
   display: flex;
@@ -603,7 +603,7 @@ h1 {
 
 .settings-panel {
   position: fixed;
-  top: 4.5rem;
+  bottom: 4.5rem;
   right: 1rem;
   z-index: 2;
   width: min(20rem, calc(100vw - 2rem));
@@ -614,18 +614,6 @@ h1 {
   box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
   text-align: left;
   animation: pop-in 0.25s ease-out;
-}
-
-@media (max-width: 640px) {
-  .settings-area {
-    top: auto;
-    bottom: 1rem;
-  }
-
-  .settings-panel {
-    top: auto;
-    bottom: 4.5rem;
-  }
 }
 
 .settings-panel h3 {
