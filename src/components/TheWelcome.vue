@@ -272,20 +272,20 @@ function checkIfEnter(event: KeyboardEvent) {
 }
 
 .page-sunny::before {
-  background: linear-gradient(180deg, #fff6b7 0%, #ffe29a 55%, #ffd36e 100%);
+  background: linear-gradient(180deg, #ffe9a8 0%, #ffc94a 55%, #ff9f1c 100%);
 }
 
 .page-cold::before {
-  background: linear-gradient(180deg, #dbeeff 0%, #b9dcff 55%, #8fc4ee 100%);
+  background: linear-gradient(180deg, #d7e3fc 0%, #a6c1ee 55%, #6c8ebf 100%);
 }
 
 @media (prefers-color-scheme: dark) {
   .page-sunny::before {
-    background: linear-gradient(180deg, #4a3a1a 0%, #6b4e1e 55%, #8a6a2e 100%);
+    background: linear-gradient(180deg, #e8cb86 0%, #e8ac2e 55%, #d97f0a 100%);
   }
 
   .page-cold::before {
-    background: linear-gradient(180deg, #10192b 0%, #1b2740 55%, #24304f 100%);
+    background: linear-gradient(180deg, #0d1321 0%, #1d2d50 55%, #2e4374 100%);
   }
 }
 
