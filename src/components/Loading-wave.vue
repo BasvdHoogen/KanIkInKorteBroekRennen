@@ -85,4 +85,10 @@
     transform: scale(0);
   }
 }
+
+@media (prefers-reduced-motion: reduce) {
+  .wave {
+    animation: none;
+  }
+}
 </style>
