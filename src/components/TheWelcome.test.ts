@@ -46,8 +46,15 @@ async function mountWithRouter(initialPath = '/') {
   return { wrapper, router }
 }
 
+function clearCookies() {
+  for (const name of ['lastLocation', 'tempPreference']) {
+    document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;`
+  }
+}
+
 afterEach(() => {
   vi.unstubAllGlobals()
+  clearCookies()
 })
 
 describe('TheWelcome', () => {
@@ -109,5 +116,30 @@ describe('TheWelcome', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.params.location).toBe('Maastricht')
+  })
+
+  it('remembers the last searched location for the next visit', async () => {
+    stubFetchResolving(weatherResponse(19))
+
+    const { wrapper } = await mountWithRouter('/')
+    await wrapper.find('input').setValue('Rotterdam')
+    await wrapper.find('button').trigger('click')
+    await flushPromises()
+
+    const fetchMock = vi.mocked(fetch)
+    fetchMock.mockClear()
+
+    await mountWithRouter('/')
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('location=Rotterdam'))
+  })
+
+  it('shifts the JA/NEE threshold based on a stored temperature preference cookie', async () => {
+    document.cookie = 'tempPreference=2; path=/;'
+    stubFetchResolving(weatherResponse(7))
+
+    const { wrapper } = await mountWithRouter('/Eindhoven')
+
+    expect(wrapper.text()).toContain('JA!')
   })
 })
