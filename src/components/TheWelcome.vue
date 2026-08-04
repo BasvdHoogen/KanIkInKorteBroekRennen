@@ -314,7 +314,7 @@ function checkIfEnter(event: KeyboardEvent) {
 }
 
 .sky-decor {
-  position: absolute;
+  position: fixed;
   inset: 0;
   height: 320px;
   overflow: hidden;
