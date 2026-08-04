@@ -287,6 +287,12 @@ function checkIfEnter(event: KeyboardEvent) {
   .page-cold::before {
     background: linear-gradient(180deg, #0d1321 0%, #1d2d50 55%, #2e4374 100%);
   }
+
+  /* JA! background is light in dark mode too, so keep the light-mode text color for contrast */
+  .page-sunny .location-name,
+  .page-sunny .verdict-text p {
+    color: var(--vt-c-text-light-1);
+  }
 }
 
 .sky-decor {
