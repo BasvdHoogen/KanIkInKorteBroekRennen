@@ -37,7 +37,7 @@ Vue 3 + Vite app (`src/`, `index.html`, `vite.config.js`). `src/App.vue` is the 
 
 - `GET /kortebroekinfo?location={location}` — the only route. Flow:
   1. `LocationIqGeocodingService.GetCoordinatesAsync(location)` (`Services/LocationIqGeocodingService.cs`) calls the LocationIQ search API to geocode the free-text `location` string into a `LocationData` (lat/long/display name/country). A regex (`([a-z])([A-Z])` → inserts a space) splits camelCase location input into words before querying.
-  2. If geocoding succeeds, `OpenMeteoWeatherService.GetCurrentWeatherAsync(...)` (`Services/OpenMeteoWeatherService.cs`) wraps an `OpenMeteoClient` (from the `OpenMeteo.dotnet` NuGet package) to fetch current weather conditions (temperature, precipitation, wind, cloud cover, weather code, etc.) at those coordinates.
+  2. If geocoding succeeds, `OpenMeteoWeatherService.GetCurrentWeatherAsync(...)` (`Services/OpenMeteoWeatherService.cs`) wraps an `OpenMeteoClient` (from the `OpenMeteo.dotnet.client.sdk` NuGet package — the actively-maintained `colinnuk/open-meteo-dotnet-client-sdk` fork; the original `OpenMeteo.dotnet` package is archived upstream) to fetch current weather conditions (temperature, precipitation, wind, cloud cover, weather code, etc.) at those coordinates.
   3. The result is wrapped in a `WeatherForcastResponse` (`WebApiKorteBroek/Classes/WeatherForcastResponse.cs`), which also exposes a derived `WeatherCodeString` property that maps Open-Meteo's numeric weather codes to Dutch-language descriptions (e.g. `0` → "Helderblauwe lucht", `61` → "Lichte regen").
   4. On any failure (geocoding fails, weather query throws), the response has `Succesfull = false`.
 

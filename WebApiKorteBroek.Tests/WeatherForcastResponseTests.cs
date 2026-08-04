@@ -1,4 +1,4 @@
-using OpenMeteo;
+using OpenMeteo.Weather.Forecast.ResponseModel;
 using WebApiKorteBroek.Classes;
 
 namespace WebApiKorteBroek.Tests;

@@ -11,11 +11,15 @@
           "Microsoft.OpenApi": "2.0.0"
         }
       },
-      "OpenMeteo.dotnet": {
+      "OpenMeteo.dotnet.client.sdk": {
         "type": "Direct",
-        "requested": "[2.0.0, )",
-        "resolved": "2.0.0",
-        "contentHash": "eJB05Lh1cHo504zESa6a3y8absRKsY8TgJMET7+Jm48KGWqMafDQIiUNNX+iXezbyPY8dlsxaZGp3NGQ+9ERNg=="
+        "requested": "[5.10.1, )",
+        "resolved": "5.10.1",
+        "contentHash": "Wu3r6TW6fwvCNjI6DXf0fTRzlVrBQupGMKmCISBHWzLZXEz/unSXCyNEoGOv8v7h9u+nayQs6+FyJHJ953mhEA==",
+        "dependencies": {
+          "ProjNET": "2.1.0",
+          "openmeteo_sdk": "1.27.2"
+        }
       },
       "Swashbuckle.AspNetCore": {
         "type": "Direct",
@@ -29,6 +33,11 @@
           "Swashbuckle.AspNetCore.SwaggerUI": "10.2.3"
         }
       },
+      "Google.FlatBuffers": {
+        "type": "Transitive",
+        "resolved": "25.2.10",
+        "contentHash": "z3ykbSRsy6oqMzeZ84a+K8rnMJ/ysVikar8r2yUhHz0HSxIjBpj53mZvpu6LjLEm5fLLWQsCdelJwL1nu7lloA=="
+      },
       "Microsoft.Extensions.ApiDescription.Server": {
         "type": "Transitive",
         "resolved": "10.0.0",
@@ -38,6 +47,19 @@
         "type": "Transitive",
         "resolved": "2.7.5",
         "contentHash": "0FA67RSnRM4tcBKqiqVu/HPdZ9+QOKbmeRjxRUGTCjPU4C0bmUhd97Dso7Yild5P7nOV6GxJ2xrK0Kv/O9xp0w=="
+      },
+      "openmeteo_sdk": {
+        "type": "Transitive",
+        "resolved": "1.27.2",
+        "contentHash": "IQBPDNxcY75KC6ty6UHQTdXOIPBrYoPh/w3+i5gKd9dwoMH5AEQpvfvq1v9brTpe2CD/W23kHhnLnBnQ6cFzGg==",
+        "dependencies": {
+          "Google.FlatBuffers": "25.2.10"
+        }
+      },
+      "ProjNET": {
+        "type": "Transitive",
+        "resolved": "2.1.0",
+        "contentHash": "4F0xEYe+cQCgWgnf1UaDlRPFm9RxTaSFt4C/axNnCgSCNWU1AFDNvTyVdN/RwNmTYoGEWxo4sOYMQrW9kQtwpg=="
       },
       "Swashbuckle.AspNetCore.Swagger": {
         "type": "Transitive",
