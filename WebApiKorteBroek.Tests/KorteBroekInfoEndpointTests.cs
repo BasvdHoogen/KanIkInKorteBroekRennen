@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.TestHost;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
 using Moq;
-using OpenMeteo;
+using OpenMeteo.Weather.Forecast.ResponseModel;
 using WebApiKorteBroek.Services;
 
 namespace WebApiKorteBroek.Tests;
