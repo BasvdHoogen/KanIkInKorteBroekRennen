@@ -1,4 +1,6 @@
+using Microsoft.AspNetCore.Cors.Infrastructure;
 using Microsoft.AspNetCore.RateLimiting;
+using System.Text.RegularExpressions;
 using WebApiKorteBroek.Classes;
 using WebApiKorteBroek.Services;
 
@@ -8,19 +10,29 @@ const string rateLimitPolicyName = "fixed";
 string[] myAllowSpecificOrigins =
     ["https://*.kanikinkortebroekrennen.nl", "http://localhost:*", "http://localhost:5174", "http://localhost:5173"];
 
+// Matches this app's Azure Static Web App production and PR-preview subdomains
+// (e.g. jolly-beach-0d25f9a03-23.westeurope.4.azurestaticapps.net), so PR previews
+// can call this backend without widening CORS to all of *.azurestaticapps.net.
+var staticWebAppOriginPattern = new Regex(
+    @"^https://jolly-beach-0d25f9a03(-\d+)?\.westeurope\.4\.azurestaticapps\.net$",
+    RegexOptions.IgnoreCase);
+
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddCors(opt =>
 {
-    opt.AddPolicy(name: policyName, policyBuilder =>
-    {
-        policyBuilder.WithOrigins(myAllowSpecificOrigins)
-            .AllowAnyHeader()
-            .AllowAnyMethod()
-            .SetIsOriginAllowedToAllowWildcardSubdomains();
-    });
+    var corsPolicy = new CorsPolicyBuilder(myAllowSpecificOrigins)
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .SetIsOriginAllowedToAllowWildcardSubdomains()
+        .Build();
+
+    var isOriginAllowed = corsPolicy.IsOriginAllowed;
+    corsPolicy.IsOriginAllowed = origin => isOriginAllowed(origin) || staticWebAppOriginPattern.IsMatch(origin);
+
+    opt.AddPolicy(policyName, corsPolicy);
 });
 builder.Services.AddProblemDetails();
 builder.Services.AddHttpClient<LocationIqGeocodingService>();

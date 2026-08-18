@@ -48,6 +48,7 @@ async function mountWithRouter(initialPath = '/') {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  localStorage.clear()
 })
 
 describe('TheWelcome', () => {
@@ -109,5 +110,30 @@ describe('TheWelcome', () => {
     await flushPromises()
 
     expect(router.currentRoute.value.params.location).toBe('Maastricht')
+  })
+
+  it('remembers the last searched location in localStorage for the next visit', async () => {
+    stubFetchResolving(weatherResponse(19))
+
+    const { wrapper } = await mountWithRouter('/')
+    await wrapper.find('input').setValue('Rotterdam')
+    await wrapper.find('button').trigger('click')
+    await flushPromises()
+
+    const fetchMock = vi.mocked(fetch)
+    fetchMock.mockClear()
+
+    await mountWithRouter('/')
+
+    expect(fetchMock).toHaveBeenCalledWith(expect.stringContaining('location=Rotterdam'))
+  })
+
+  it('shifts the JA/NEE threshold based on a stored temperature preference', async () => {
+    localStorage.setItem('tempPreference', '2')
+    stubFetchResolving(weatherResponse(7))
+
+    const { wrapper } = await mountWithRouter('/Eindhoven')
+
+    expect(wrapper.text()).toContain('JA!')
   })
 })
