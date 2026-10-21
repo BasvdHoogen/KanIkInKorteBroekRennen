@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { WEATHER_CODE_EMOJI, weatherCodeToEmoji } from './weatherIcons'
-import { MESSAGES, SUPPORTED_LOCALES } from '@/i18n'
+import { LOCALE_FLAGS, LOCALE_NAMES, MESSAGES, SUPPORTED_LOCALES } from '@/i18n'
 
 describe('weatherCodeToEmoji', () => {
   it('maps a known code to its emoji', () => {
@@ -30,5 +30,12 @@ describe('weather code translations', () => {
 
   it.each(SUPPORTED_LOCALES)('has exactly 7 preference labels in %s', (locale) => {
     expect(MESSAGES[locale].preferenceLabels).toHaveLength(7)
+  })
+})
+
+describe('locale presentation', () => {
+  it.each(SUPPORTED_LOCALES)('has a name and a flag for %s', (locale) => {
+    expect(LOCALE_NAMES[locale]).toBeTruthy()
+    expect(LOCALE_FLAGS[locale]).toBeTruthy()
   })
 })

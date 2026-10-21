@@ -23,6 +23,17 @@ export const LOCALE_NAMES: Record<Locale, string> = {
   es: 'Español',
 }
 
+/**
+ * Decorative only. Flags are countries, not languages — no flag honestly covers
+ * every speaker of a language — so the endonym above stays the real label and
+ * these are rendered aria-hidden beside it.
+ */
+export const LOCALE_FLAGS: Record<Locale, string> = {
+  nl: '🇳🇱',
+  en: '🇬🇧',
+  es: '🇪🇸',
+}
+
 export const DEFAULT_LOCALE: Locale = 'nl'
 export const LOCALE_STORAGE_KEY = 'locale'
 

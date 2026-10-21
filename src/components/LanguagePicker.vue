@@ -2,7 +2,7 @@
 import {computed, onBeforeUnmount, onMounted, ref} from 'vue'
 import {useI18n} from 'vue-i18n'
 import {useRoute} from 'vue-router'
-import {LOCALE_NAMES, SUPPORTED_LOCALES, type Locale} from '@/i18n'
+import {LOCALE_FLAGS, LOCALE_NAMES, SUPPORTED_LOCALES, type Locale} from '@/i18n'
 import {localeRoute} from '@/router/localeRoute'
 
 const {t, locale} = useI18n()
@@ -19,6 +19,7 @@ const options = computed(() =>
     SUPPORTED_LOCALES.map((value) => ({
       value,
       label: LOCALE_NAMES[value],
+      flag: LOCALE_FLAGS[value],
       to: localeRoute(value, String(route.params.location ?? '')),
       isCurrent: value === currentLocale.value,
     }))
@@ -56,6 +57,7 @@ onBeforeUnmount(() => {
         :aria-expanded="open"
         :aria-label="t('a11y.language')"
         @click="open = !open">
+      <span class="lang-flag" aria-hidden="true">{{ LOCALE_FLAGS[currentLocale] }}</span>
       {{ currentLocale.toUpperCase() }}
       <span class="lang-caret" aria-hidden="true">▾</span>
     </button>
@@ -72,6 +74,7 @@ onBeforeUnmount(() => {
             :aria-current="option.isCurrent ? 'true' : undefined"
             :data-locale="option.value"
             @click="close">
+          <span class="lang-flag" aria-hidden="true">{{ option.flag }}</span>
           {{ option.label }}
         </router-link>
       </li>
@@ -120,6 +123,14 @@ onBeforeUnmount(() => {
   background: var(--color-background-soft);
   box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
   min-width: 9rem;
+}
+
+.lang-flag {
+  /* Emoji flags vary in width between platforms; a fixed box keeps the labels aligned. */
+  display: inline-block;
+  width: 1.4em;
+  font-size: 1.05em;
+  line-height: 1;
 }
 
 .lang-option {
