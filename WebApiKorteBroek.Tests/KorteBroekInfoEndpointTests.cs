@@ -86,6 +86,32 @@ public class KorteBroekInfoEndpointTests
         Assert.Equal(HttpStatusCode.InternalServerError, response.StatusCode);
     }
 
+    [Theory]
+    [InlineData("en")]
+    [InlineData("nl")]
+    [InlineData("de")]
+    public async Task KorteBroekInfo_AnyLanguage_StillSucceeds(string language)
+    {
+        // An unsupported language degrades to Dutch rather than failing the request.
+        var weatherMock = new Mock<OpenMeteoWeatherService>();
+        weatherMock
+            .Setup(w => w.GetCurrentWeatherAsync(It.IsAny<float>(), It.IsAny<float>()))
+            .ReturnsAsync(new WeatherForecast
+            {
+                Latitude = 51.4416f,
+                Longitude = 5.4697f,
+                Current = new Current { Temperature_2m = 20f, Apparent_temperature = 19f, Weathercode = 0 }
+            });
+        var factory = CreateFactory(HttpStatusCode.OK, TestData.ValidLocationIqResponse, weatherMock);
+        var client = factory.CreateClient();
+
+        var response = await client.GetAsync($"/kortebroekinfo?location=Eindhoven&lang={language}");
+        var body = await ReadJsonAsync(response);
+
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        Assert.True(body.GetProperty("succesfull").GetBoolean());
+    }
+
     [Fact]
     public async Task Health_ReturnsOk()
     {

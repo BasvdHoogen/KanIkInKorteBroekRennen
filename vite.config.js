@@ -15,6 +15,12 @@ export default defineConfig({
       }
     }),
   ],
+  define: {
+    // Drop vue-i18n's legacy API from the bundle and silence its esm-bundler warning.
+    __VUE_I18N_FULL_INSTALL__: 'true',
+    __VUE_I18N_LEGACY_API__: 'false',
+    __INTLIFY_PROD_DEVTOOLS__: 'false'
+  },
   resolve: {
     alias: {
       '@': fileURLToPath(new URL('./src', import.meta.url))

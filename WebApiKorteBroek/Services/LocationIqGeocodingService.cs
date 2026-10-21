@@ -17,15 +17,17 @@ public class LocationIqGeocodingService
         _apiKey = configuration["LocationIQ:ApiKey"];
     }
 
-    public virtual async Task<LocationData?> GetCoordinatesAsync(string inputLocation)
+    public virtual async Task<LocationData?> GetCoordinatesAsync(string inputLocation, string language = "nl")
     {
         try
         {
+            // Re-validated here as well as at the endpoint: this method is public virtual.
+            var acceptLanguage = language == "en" ? "en" : "nl";
             inputLocation = Regex.Replace(inputLocation, "([a-z])([A-Z])", "$1 $2");
             var encodedLocation = Uri.EscapeDataString(inputLocation);
             var response =
                 await _httpClient.GetAsync(
-                    $"https://eu1.locationiq.com/v1/search?q={encodedLocation}&format=json&addressdetails=1&accept-language=nl&key={_apiKey}");
+                    $"https://eu1.locationiq.com/v1/search?q={encodedLocation}&format=json&addressdetails=1&accept-language={acceptLanguage}&key={_apiKey}");
 
             if (!response.IsSuccessStatusCode) return null;
 

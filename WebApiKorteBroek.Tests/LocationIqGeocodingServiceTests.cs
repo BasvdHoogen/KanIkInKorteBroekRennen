@@ -42,6 +42,31 @@ public class LocationIqGeocodingServiceTests
     }
 
     [Fact]
+    public async Task GetCoordinatesAsync_DefaultLanguage_RequestsDutchPlaceNames()
+    {
+        var handler = FakeHttpMessageHandler.ReturningJson(HttpStatusCode.OK, TestData.ValidLocationIqResponse);
+        var service = CreateService(handler);
+
+        await service.GetCoordinatesAsync("Eindhoven");
+
+        Assert.Contains("accept-language=nl", handler.LastRequest!.RequestUri!.Query);
+    }
+
+    [Theory]
+    [InlineData("en", "accept-language=en")]
+    [InlineData("nl", "accept-language=nl")]
+    [InlineData("de", "accept-language=nl")]
+    public async Task GetCoordinatesAsync_PassesSupportedLanguageAndFallsBackToDutch(string language, string expected)
+    {
+        var handler = FakeHttpMessageHandler.ReturningJson(HttpStatusCode.OK, TestData.ValidLocationIqResponse);
+        var service = CreateService(handler);
+
+        await service.GetCoordinatesAsync("Eindhoven", language);
+
+        Assert.Contains(expected, handler.LastRequest!.RequestUri!.Query);
+    }
+
+    [Fact]
     public async Task GetCoordinatesAsync_NonSuccessStatusCode_ReturnsNull()
     {
         var handler = FakeHttpMessageHandler.ReturningJson(HttpStatusCode.InternalServerError, "");
