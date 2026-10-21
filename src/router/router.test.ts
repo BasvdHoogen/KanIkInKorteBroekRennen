@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createRouter, createWebHistory } from 'vue-router'
 import { createAppRouter, installLanguageGuard, routes } from './index'
-import { createAppI18n, i18n } from '@/i18n'
+import { createAppI18n, DEFAULT_LOCALE, i18n, SUPPORTED_LOCALES } from '@/i18n'
 
 async function navigate(initialPath: string) {
   const router = createRouter({ history: createWebHistory(), routes })
@@ -17,17 +17,38 @@ afterEach(() => {
   localStorage.clear()
 })
 
+// One row per supported language, so a new locale is covered on registration.
+const routeCases = SUPPORTED_LOCALES.flatMap((locale) => {
+  const isDefault = locale === DEFAULT_LOCALE
+  const suffix = isDefault ? '' : `-${locale}`
+  return [
+    [isDefault ? '/' : `/${locale}`, `home${suffix}`, locale],
+    [isDefault ? '/Amsterdam' : `/${locale}/Amsterdam`, `location${suffix}`, locale],
+  ] as const
+})
+
 describe('route matching', () => {
-  it.each([
-    ['/', 'home'],
-    ['/Amsterdam', 'location'],
-    ['/en', 'home-en'],
-    ['/en/Amsterdam', 'location-en'],
-  ])('matches %s to the %s route', async (path, name) => {
+  it.each(routeCases)('matches %s to the %s route', async (path, name) => {
     const { router } = await navigate(path)
 
     expect(router.currentRoute.value.name).toBe(name)
   })
+
+  it.each(routeCases)('applies the right locale for %s', async (path, _name, locale) => {
+    const { i18n: instance } = await navigate(path)
+
+    expect(instance.global.locale.value).toBe(locale)
+  })
+
+  // The static language prefixes must keep outranking the /:location catch-all.
+  it.each(['/Amsterdam', '/Enschede', '/Espanola', '/Nijmegen'])(
+    'treats %s as a location, not a language prefix',
+    async (path) => {
+      const { router } = await navigate(path)
+
+      expect(router.currentRoute.value.name).toBe('location')
+    },
+  )
 })
 
 describe('language guard', () => {
@@ -40,14 +61,17 @@ describe('language guard', () => {
     expect(i18n.global.locale.value).toBe('nl')
   })
 
-  it('redirects a first visit to /en when English is remembered', async () => {
-    localStorage.setItem('locale', 'en')
+  it.each(SUPPORTED_LOCALES.filter((locale) => locale !== DEFAULT_LOCALE))(
+    'redirects a first visit to /%s when that language is remembered',
+    async (locale) => {
+      localStorage.setItem('locale', locale)
 
-    const { router, i18n } = await navigate('/Eindhoven')
+      const { router, i18n } = await navigate('/Eindhoven')
 
-    expect(router.currentRoute.value.path).toBe('/en/Eindhoven')
-    expect(i18n.global.locale.value).toBe('en')
-  })
+      expect(router.currentRoute.value.path).toBe(`/${locale}/Eindhoven`)
+      expect(i18n.global.locale.value).toBe(locale)
+    },
+  )
 
   it('stays Dutch on a first visit with nothing remembered', async () => {
     const { router, i18n } = await navigate('/')
@@ -82,6 +106,14 @@ describe('language guard', () => {
 
     expect(router.currentRoute.value.path).toBe('/Eindhoven')
     expect(i18n.global.locale.value).toBe('nl')
+  })
+
+  it('follows a hop straight from one prefixed language to another', async () => {
+    const { router, i18n } = await navigate('/en/Eindhoven')
+    await router.push('/es/Eindhoven')
+
+    expect(i18n.global.locale.value).toBe('es')
+    expect(document.documentElement.lang).toBe('es')
   })
 
   it('keeps <html lang> and the document title in step with the locale', async () => {

@@ -2,6 +2,7 @@
 import {computed, onMounted, ref, Ref, watch} from 'vue'
 import {useI18n} from 'vue-i18n'
 import LoadingWave from "@/components/Loading-wave.vue";
+import LanguagePicker from "@/components/LanguagePicker.vue";
 import {useRoute, useRouter} from "vue-router";
 import {getStoredValue, setStoredValue} from "@/utils/storage";
 import {weatherCodeToEmoji} from "@/utils/weatherIcons";
@@ -50,7 +51,6 @@ const router = useRouter();
 const {t, te, locale, tm} = useI18n();
 
 const currentLocale = computed<Locale>(() => locale.value as Locale)
-const otherLocale = computed<Locale>(() => (currentLocale.value === 'en' ? 'nl' : 'en'))
 
 const initialLocation = Array.isArray(route.params.location) ? route.params.location[0] : route.params.location;
 const rememberedLocation = getStoredValue(LOCATION_STORAGE_KEY);
@@ -104,12 +104,6 @@ const showTemperatureHint = computed(() => !hasStoredTemperaturePreference && !s
 const hasVerdict = computed(() => successful.value === true && weatherData.value?.current != null)
 const skyIcon = computed(() => (hasVerdict.value && !canWearShorts.value) ? '❄️' : '☀️')
 
-// Built from the URL rather than from `location`, which may hold a remembered
-// value that was never in the address bar.
-const otherLanguageRoute = computed(() =>
-    localeRoute(otherLocale.value, String(route.params.location ?? ""))
-)
-
 function toggleSettings() {
   showSettings.value = !showSettings.value;
   if (showSettings.value) {
@@ -128,7 +122,7 @@ onMounted(() => {
   GetWeather();
 })
 
-// All four routes render this component, so navigating between them patches
+// Every locale's routes render this component, so navigating between them patches
 // rather than remounts: these watchers are what refetch, not onMounted.
 watch(() => route.params.location, (value) => {
   location.value = (Array.isArray(value) ? value[0] : value) ?? "";
@@ -261,12 +255,7 @@ function checkIfEnter(event: KeyboardEvent) {
         <span class="settings-icon">⚙️</span>
         <span v-if="showTemperatureHint" class="hint-dot" aria-hidden="true"></span>
       </button>
-      <router-link
-          class="lang-toggle"
-          :to="otherLanguageRoute"
-          :lang="otherLocale"
-          :hreflang="otherLocale"
-          :aria-label="t('a11y.switchLanguage')">{{ otherLocale.toUpperCase() }}</router-link>
+      <language-picker />
     </div>
 
     <div v-if="showSettings" class="settings-panel">
@@ -609,24 +598,6 @@ h1 {
   display: flex;
   align-items: center;
   gap: 0.6rem;
-}
-
-.lang-toggle {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 3rem;
-  height: 3rem;
-  padding: 0 0.6rem;
-  border-radius: 999px;
-  background: var(--color-background-soft);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  color: inherit;
-  font-weight: 600;
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
-  text-decoration: none;
 }
 
 .settings-toggle {

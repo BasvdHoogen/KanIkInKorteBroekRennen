@@ -72,11 +72,11 @@ app.MapGet("/kortebroekinfo", async Task<WeatherForcastResponse> (
             LocationIqGeocodingService geocodingService,
             OpenMeteoWeatherService weatherService,
             string location = "Eindhoven",
-            string lang = "nl") =>
+            string lang = LocationIqGeocodingService.DefaultLanguage) =>
         {
             // An unsupported language quietly falls back to Dutch: this is a
             // URL-driven parameter, so failing the whole request would be harsh.
-            var language = lang == "en" ? "en" : "nl";
+            var language = LocationIqGeocodingService.ResolveLanguage(lang);
             var locationData = await geocodingService.GetCoordinatesAsync(location, language);
 
             if (locationData == null)

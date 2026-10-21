@@ -55,7 +55,10 @@ public class LocationIqGeocodingServiceTests
     [Theory]
     [InlineData("en", "accept-language=en")]
     [InlineData("nl", "accept-language=nl")]
+    [InlineData("es", "accept-language=es")]
+    [InlineData("EN", "accept-language=en")]
     [InlineData("de", "accept-language=nl")]
+    [InlineData("", "accept-language=nl")]
     public async Task GetCoordinatesAsync_PassesSupportedLanguageAndFallsBackToDutch(string language, string expected)
     {
         var handler = FakeHttpMessageHandler.ReturningJson(HttpStatusCode.OK, TestData.ValidLocationIqResponse);
