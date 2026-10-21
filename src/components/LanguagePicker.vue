@@ -13,6 +13,10 @@ const root = ref<HTMLElement | null>(null)
 
 const currentLocale = computed<Locale>(() => locale.value as Locale)
 
+// The button shows only a flag, so the accessible name has to carry both what
+// the control is and which language is currently active.
+const triggerLabel = computed(() => `${t('a11y.language')}: ${LOCALE_NAMES[currentLocale.value]}`)
+
 // Built from the URL rather than from a remembered location, so switching
 // language never promotes a stored location into the address bar.
 const options = computed(() =>
@@ -55,11 +59,9 @@ onBeforeUnmount(() => {
         type="button"
         aria-haspopup="menu"
         :aria-expanded="open"
-        :aria-label="t('a11y.language')"
+        :aria-label="triggerLabel"
         @click="open = !open">
       <span class="lang-flag" aria-hidden="true">{{ LOCALE_FLAGS[currentLocale] }}</span>
-      {{ currentLocale.toUpperCase() }}
-      <span class="lang-caret" aria-hidden="true">▾</span>
     </button>
 
     <ul v-if="open" class="lang-menu" role="menu">
@@ -92,18 +94,17 @@ onBeforeUnmount(() => {
   display: inline-flex;
   align-items: center;
   gap: 0.25rem;
-  min-width: 3rem;
+  justify-content: center;
+  width: 3rem;
   height: 3rem;
-  padding: 0 0.7rem;
+  padding: 0;
   border: none;
   border-radius: 999px;
   background: var(--color-background-soft);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   color: inherit;
   font-family: inherit;
-  font-weight: 600;
-  font-size: 0.95rem;
-  letter-spacing: 0.04em;
+  font-size: 1.1rem;
   cursor: pointer;
 }
 

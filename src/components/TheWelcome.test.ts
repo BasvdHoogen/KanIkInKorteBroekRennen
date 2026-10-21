@@ -3,7 +3,15 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createRouter, createWebHistory } from 'vue-router'
 import TheWelcome from './TheWelcome.vue'
 import { installLanguageGuard, routes } from '@/router'
-import { createAppI18n, isLocale, MESSAGES, SUPPORTED_LOCALES, type Locale } from '@/i18n'
+import {
+  createAppI18n,
+  isLocale,
+  LOCALE_FLAGS,
+  LOCALE_NAMES,
+  MESSAGES,
+  SUPPORTED_LOCALES,
+  type Locale,
+} from '@/i18n'
 
 function weatherResponse(apparentTemperature: number) {
   return {
@@ -213,6 +221,18 @@ describe('TheWelcome', () => {
       expect(fetch).toHaveBeenCalledWith(expect.stringContaining(`lang=${locale}`))
     },
   )
+
+  it('shows only a flag on the picker trigger, never the locale code', async () => {
+    stubFetchResolving(weatherResponse(19))
+
+    const { wrapper } = await mountWithRouter('/Eindhoven')
+    const trigger = wrapper.find('.lang-trigger')
+
+    expect(trigger.text()).toContain(LOCALE_FLAGS.nl)
+    expect(trigger.text()).not.toContain('NL')
+    // The flag is aria-hidden, so the accessible name has to carry the language.
+    expect(trigger.attributes('aria-label')).toContain(LOCALE_NAMES.nl)
+  })
 
   it('offers every supported language in the picker', async () => {
     stubFetchResolving(weatherResponse(19))
