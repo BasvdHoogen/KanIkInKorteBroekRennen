@@ -6,6 +6,24 @@ namespace WebApiKorteBroek.Services;
 
 public class LocationIqGeocodingService
 {
+    /// <summary>
+    /// Languages the UI can be read in, and therefore the ones we ask LocationIQ
+    /// for place names in. Mirrors SUPPORTED_LOCALES in the frontend's src/i18n.
+    /// </summary>
+    public static readonly IReadOnlySet<string> SupportedLanguages =
+        new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "nl", "en", "es" };
+
+    public const string DefaultLanguage = "nl";
+
+    /// <summary>
+    /// Falls back to Dutch for anything we do not translate, rather than failing:
+    /// this value comes straight from a URL.
+    /// </summary>
+    public static string ResolveLanguage(string? language) =>
+        language != null && SupportedLanguages.Contains(language)
+            ? language.ToLowerInvariant()
+            : DefaultLanguage;
+
     private readonly HttpClient _httpClient;
     private readonly ILogger<LocationIqGeocodingService> _logger;
     private readonly string? _apiKey;
@@ -17,12 +35,12 @@ public class LocationIqGeocodingService
         _apiKey = configuration["LocationIQ:ApiKey"];
     }
 
-    public virtual async Task<LocationData?> GetCoordinatesAsync(string inputLocation, string language = "nl")
+    public virtual async Task<LocationData?> GetCoordinatesAsync(string inputLocation, string language = DefaultLanguage)
     {
         try
         {
             // Re-validated here as well as at the endpoint: this method is public virtual.
-            var acceptLanguage = language == "en" ? "en" : "nl";
+            var acceptLanguage = ResolveLanguage(language);
             inputLocation = Regex.Replace(inputLocation, "([a-z])([A-Z])", "$1 $2");
             var encodedLocation = Uri.EscapeDataString(inputLocation);
             var response =

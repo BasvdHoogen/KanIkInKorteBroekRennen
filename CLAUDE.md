@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project overview
 
-This repository is the monorepo for the "Kanikinkortebroekrennen" project: a Vue 3 frontend (at the repo root) and an ASP.NET Core 10 Web API backend (`WebApiKorteBroek/`), combined via `git subtree` from two previously separate repos. It gives a location name, geocodes it via LocationIQ, and returns current weather from Open-Meteo translated into Dutch-language descriptions.
+This repository is the monorepo for the "Kanikinkortebroekrennen" project: a Vue 3 frontend (at the repo root) and an ASP.NET Core 10 Web API backend (`WebApiKorteBroek/`), combined via `git subtree` from two previously separate repos. It gives a location name, geocodes it via LocationIQ, and returns current weather from Open-Meteo. The UI is available in Dutch, English and Spanish.
 
 The repo root is the frontend's original identity (`vue-weather-app-try` / GitHub repo `BasvdHoogen/KanIkRennenInKorteBroek`) — the backend was merged in as a subfolder, keeping the frontend's paths and deployment untouched.
 
@@ -30,15 +30,26 @@ The repo root is the frontend's original identity (`vue-weather-app-try` / GitHu
 ## Architecture
 
 ### Frontend
-Vue 3 + Vite app (`src/`, `index.html`, `vite.config.js`). `src/App.vue` is the main component; `src/components/` holds `Loading-wave.vue` and `TheWelcome.vue`. Deployed as an Azure Static Web App.
+Vue 3 + Vite app (`src/`, `index.html`, `vite.config.js`). `src/App.vue` is the main component; `src/components/` holds `TheWelcome.vue` (the whole UI), `Loading-wave.vue` and `LanguagePicker.vue`. Deployed as an Azure Static Web App.
+
+#### Internationalisation
+The UI is translated with `vue-i18n` (Composition API, `legacy: false`).
+
+- `src/i18n/index.ts` is the single source of truth: `SUPPORTED_LOCALES` (`nl`, `en`, `es`), the `MESSAGES` registry, `LOCALE_NAMES` (each language's endonym) and `applyLocale`, which sets the locale, persists it, and syncs `<html lang>` + `document.title`.
+- `src/i18n/locales/*.ts` hold the catalogues. `nl.ts` is privileged: it exports `MessageSchema = typeof nl`, and the other catalogues are typed against it, so a missing or extra key fails `vue-tsc`.
+- **Adding a language is a catalogue file plus an entry in `SUPPORTED_LOCALES`, `MESSAGES` and `LOCALE_NAMES`.** The routes, the language picker and the locale test tables are all derived from that list; omitting an entry is a compile error, not a runtime surprise.
+- Weather descriptions are translated client-side from the numeric Open-Meteo code (`weatherCode.c<code>` keys, built at runtime, so covered by a drift test in `src/utils/weatherIcons.test.ts` rather than by the compiler). The backend's Dutch `WeatherCodeString` is only a fallback when the code is missing and the UI is Dutch.
+
+#### Routing (`src/router/`)
+Dutch is the default and is unprefixed (`/`, `/:location`); every other language gets a static prefix (`/en`, `/en/:location`, `/es`, …), generated from `SUPPORTED_LOCALES` and listed **before** the `/:location` catch-all so a location is never read as a language. `localeRoute()` builds a target for a given locale; `installLanguageGuard()` keeps the active locale in step with the URL (including browser back/forward). A first visit to an unprefixed URL restores a previously chosen language; the browser's own language is deliberately ignored so `/` means Dutch for everyone. Locale codes (`en`, `nl`, `es`) are therefore reserved and cannot be location names.
 
 ### Backend (`WebApiKorteBroek/`)
 `WebApiKorteBroek/Program.cs` wires up DI and the minimal API endpoints; the two external calls it depends on live in `WebApiKorteBroek/Services/` so they can be substituted in tests (see Testing below) — there are no `IFoo`/`Foo` interface pairs, just concrete classes:
 
-- `GET /kortebroekinfo?location={location}` — the only route. Flow:
+- `GET /kortebroekinfo?location={location}&lang={nl|en|es}` — the only route. `lang` is optional (default `nl`) and sets LocationIQ's `accept-language` so place names come back localised; anything unsupported degrades to Dutch rather than failing. The supported set lives in `LocationIqGeocodingService.SupportedLanguages`/`ResolveLanguage` and mirrors the frontend's `SUPPORTED_LOCALES`. Flow:
   1. `LocationIqGeocodingService.GetCoordinatesAsync(location)` (`Services/LocationIqGeocodingService.cs`) calls the LocationIQ search API to geocode the free-text `location` string into a `LocationData` (lat/long/display name/country). A regex (`([a-z])([A-Z])` → inserts a space) splits camelCase location input into words before querying.
   2. If geocoding succeeds, `OpenMeteoWeatherService.GetCurrentWeatherAsync(...)` (`Services/OpenMeteoWeatherService.cs`) wraps an `OpenMeteoClient` (from the `OpenMeteo.dotnet.client.sdk` NuGet package — the actively-maintained `colinnuk/open-meteo-dotnet-client-sdk` fork; the original `OpenMeteo.dotnet` package is archived upstream) to fetch current weather conditions (temperature, precipitation, wind, cloud cover, weather code, etc.) at those coordinates.
-  3. The result is wrapped in a `WeatherForcastResponse` (`WebApiKorteBroek/Classes/WeatherForcastResponse.cs`), which also exposes a derived `WeatherCodeString` property that maps Open-Meteo's numeric weather codes to Dutch-language descriptions (e.g. `0` → "Helderblauwe lucht", `61` → "Lichte regen").
+  3. The result is wrapped in a `WeatherForcastResponse` (`WebApiKorteBroek/Classes/WeatherForcastResponse.cs`), which also exposes a derived `WeatherCodeString` property that maps Open-Meteo's numeric weather codes to Dutch-language descriptions (e.g. `0` → "Helderblauwe lucht", `61` → "Lichte regen"). The frontend translates these itself from the numeric code and only falls back to this string, so it is kept for API compatibility rather than being the UI's source of weather text.
   4. On any failure (geocoding fails, weather query throws), the response has `Succesfull = false`.
 
 Supporting types (`LocationSuggestion`, `Address`, `LocationData`) for parsing the LocationIQ response live in `WebApiKorteBroek/Classes/LocationData.cs`.

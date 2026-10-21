@@ -2,9 +2,37 @@ import { createI18n } from 'vue-i18n'
 import { getStoredValue, setStoredValue } from '@/utils/storage'
 import { nl, type MessageSchema } from './locales/nl'
 import { en } from './locales/en'
+import { es } from './locales/es'
 
-export const SUPPORTED_LOCALES = ['nl', 'en'] as const
+// The single source of truth for how many languages exist. Routes, the language
+// picker and the test tables are all derived from it, so adding a language is a
+// catalogue file plus an entry here and in MESSAGES.
+export const SUPPORTED_LOCALES = ['nl', 'en', 'es'] as const
 export type Locale = (typeof SUPPORTED_LOCALES)[number]
+
+export const MESSAGES: Record<Locale, MessageSchema> = { nl, en, es }
+
+/**
+ * Each language's name in its own words. Deliberately not part of the message
+ * catalogues: a language's own name does not change with the surrounding UI
+ * language, so "Español" belongs here once rather than in all three files.
+ */
+export const LOCALE_NAMES: Record<Locale, string> = {
+  nl: 'Nederlands',
+  en: 'English',
+  es: 'Español',
+}
+
+/**
+ * Decorative only. Flags are countries, not languages — no flag honestly covers
+ * every speaker of a language — so the endonym above stays the real label and
+ * these are rendered aria-hidden beside it.
+ */
+export const LOCALE_FLAGS: Record<Locale, string> = {
+  nl: '🇳🇱',
+  en: '🇬🇧',
+  es: '🇪🇸',
+}
 
 export const DEFAULT_LOCALE: Locale = 'nl'
 export const LOCALE_STORAGE_KEY = 'locale'
@@ -19,7 +47,7 @@ export function createAppI18n(locale: Locale = DEFAULT_LOCALE) {
     globalInjection: true,
     locale,
     fallbackLocale: DEFAULT_LOCALE,
-    messages: { nl, en },
+    messages: MESSAGES,
   })
 }
 

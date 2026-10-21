@@ -1,3 +1,6 @@
+/** Exactly one label per slider position, from -3 (cold quickly) to +3 (warm quickly). */
+export type PreferenceLabels = readonly [string, string, string, string, string, string, string]
+
 export const nl = {
   app: {
     title: 'Kan ik in korte broek rennen?',
@@ -40,10 +43,10 @@ export const nl = {
     '☀️ Iets sneller warm',
     '🥵 Snel warm',
     '🥵 Heel snel warm',
-  ],
+  ] as PreferenceLabels,
   a11y: {
     preferences: 'Voorkeuren',
-    switchLanguage: 'Switch to English',
+    language: 'Taal',
   },
   weatherCode: {
     c0: 'Helderblauwe lucht',

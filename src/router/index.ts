@@ -11,6 +11,7 @@ import {
   DEFAULT_LOCALE,
   i18n as globalI18n,
   storedLocale,
+  SUPPORTED_LOCALES,
   type AppI18n,
   type Locale,
 } from '@/i18n'
@@ -24,11 +25,24 @@ declare module 'vue-router' {
   }
 }
 
-// The English records come first and use a static `/en` segment, so `/Amsterdam`
-// can never be mistaken for a language prefix.
+// Every non-default language gets a static `/<locale>` prefix. These records are
+// listed first so the static segment always outranks the `/:location` catch-all:
+// `/Amsterdam` can never be mistaken for a language prefix. Generating them from
+// SUPPORTED_LOCALES keeps that ordering structural rather than a rule to remember.
+const prefixedRoutes: RouteRecordRaw[] = SUPPORTED_LOCALES.filter(
+  (locale) => locale !== DEFAULT_LOCALE,
+).flatMap((lang) => [
+  { path: `/${lang}`, name: `home-${lang}`, component: TheWelcome, meta: { lang } },
+  {
+    path: `/${lang}/:location`,
+    name: `location-${lang}`,
+    component: TheWelcome,
+    meta: { lang },
+  },
+])
+
 export const routes: RouteRecordRaw[] = [
-  { path: '/en', name: 'home-en', component: TheWelcome, meta: { lang: 'en' } },
-  { path: '/en/:location', name: 'location-en', component: TheWelcome, meta: { lang: 'en' } },
+  ...prefixedRoutes,
   { path: '/', name: 'home', component: TheWelcome },
   { path: '/:location', name: 'location', component: TheWelcome },
 ]

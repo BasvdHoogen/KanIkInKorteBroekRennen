@@ -15,6 +15,15 @@ public class KorteBroekInfoEndpointTests
     private static WebApplicationFactory<Program> CreateFactory(
         HttpStatusCode geocodingStatusCode,
         string geocodingResponseBody,
+        Mock<OpenMeteoWeatherService> weatherMock) =>
+        CreateFactory(FakeHttpMessageHandler.ReturningJson(geocodingStatusCode, geocodingResponseBody), weatherMock);
+
+    /// <summary>
+    /// Takes the handler so a test can inspect the request that actually reached
+    /// LocationIQ, rather than only the response the endpoint returned.
+    /// </summary>
+    private static WebApplicationFactory<Program> CreateFactory(
+        FakeHttpMessageHandler geocodingHandler,
         Mock<OpenMeteoWeatherService> weatherMock)
     {
         return new WebApplicationFactory<Program>().WithWebHostBuilder(builder =>
@@ -22,8 +31,7 @@ public class KorteBroekInfoEndpointTests
             builder.ConfigureTestServices(services =>
             {
                 services.AddHttpClient<LocationIqGeocodingService>()
-                    .ConfigurePrimaryHttpMessageHandler(() =>
-                        FakeHttpMessageHandler.ReturningJson(geocodingStatusCode, geocodingResponseBody));
+                    .ConfigurePrimaryHttpMessageHandler(() => geocodingHandler);
 
                 services.RemoveAll<OpenMeteoWeatherService>();
                 services.AddSingleton(weatherMock.Object);
@@ -87,12 +95,13 @@ public class KorteBroekInfoEndpointTests
     }
 
     [Theory]
-    [InlineData("en")]
-    [InlineData("nl")]
-    [InlineData("de")]
-    public async Task KorteBroekInfo_AnyLanguage_StillSucceeds(string language)
+    [InlineData("nl", "accept-language=nl")]
+    [InlineData("en", "accept-language=en")]
+    [InlineData("es", "accept-language=es")]
+    // Anything we do not translate degrades to Dutch instead of failing the request.
+    [InlineData("de", "accept-language=nl")]
+    public async Task KorteBroekInfo_RequestsPlaceNamesInTheGivenLanguage(string language, string expectedQuery)
     {
-        // An unsupported language degrades to Dutch rather than failing the request.
         var weatherMock = new Mock<OpenMeteoWeatherService>();
         weatherMock
             .Setup(w => w.GetCurrentWeatherAsync(It.IsAny<float>(), It.IsAny<float>()))
@@ -102,7 +111,8 @@ public class KorteBroekInfoEndpointTests
                 Longitude = 5.4697f,
                 Current = new Current { Temperature_2m = 20f, Apparent_temperature = 19f, Weathercode = 0 }
             });
-        var factory = CreateFactory(HttpStatusCode.OK, TestData.ValidLocationIqResponse, weatherMock);
+        var geocodingHandler = FakeHttpMessageHandler.ReturningJson(HttpStatusCode.OK, TestData.ValidLocationIqResponse);
+        var factory = CreateFactory(geocodingHandler, weatherMock);
         var client = factory.CreateClient();
 
         var response = await client.GetAsync($"/kortebroekinfo?location=Eindhoven&lang={language}");
@@ -110,6 +120,7 @@ public class KorteBroekInfoEndpointTests
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.True(body.GetProperty("succesfull").GetBoolean());
+        Assert.Contains(expectedQuery, geocodingHandler.LastRequest!.RequestUri!.Query);
     }
 
     [Fact]

@@ -3,7 +3,15 @@ import { flushPromises, mount } from '@vue/test-utils'
 import { createRouter, createWebHistory } from 'vue-router'
 import TheWelcome from './TheWelcome.vue'
 import { installLanguageGuard, routes } from '@/router'
-import { createAppI18n } from '@/i18n'
+import {
+  createAppI18n,
+  isLocale,
+  LOCALE_FLAGS,
+  LOCALE_NAMES,
+  MESSAGES,
+  SUPPORTED_LOCALES,
+  type Locale,
+} from '@/i18n'
 
 function weatherResponse(apparentTemperature: number) {
   return {
@@ -28,6 +36,11 @@ function weatherResponse(apparentTemperature: number) {
   }
 }
 
+const localeCases = SUPPORTED_LOCALES.map((locale) => ({
+  locale,
+  path: locale === 'nl' ? '/Eindhoven' : `/${locale}/Eindhoven`,
+}))
+
 function stubFetchResolving(body: unknown) {
   vi.stubGlobal(
     'fetch',
@@ -38,9 +51,15 @@ function stubFetchResolving(body: unknown) {
 // The language guard is deliberately not installed here: these tests drive the
 // component directly, and the locale comes from the path. It has its own tests
 // in router.test.ts.
+/** The locale a path implies, by its prefix — '/es/Eindhoven' means Spanish. */
+function localeOfPath(path: string): Locale {
+  const firstSegment = path.split('/')[1] ?? ''
+  return isLocale(firstSegment) ? firstSegment : 'nl'
+}
+
 async function mountWithRouter(initialPath = '/', { withLanguageGuard = false } = {}) {
   const router = createRouter({ history: createWebHistory(), routes })
-  const i18n = createAppI18n(initialPath.startsWith('/en') ? 'en' : 'nl')
+  const i18n = createAppI18n(localeOfPath(initialPath))
   if (withLanguageGuard) installLanguageGuard(router, i18n)
   await router.push(initialPath)
   await router.isReady()
@@ -139,53 +158,93 @@ describe('TheWelcome', () => {
 
     expect(wrapper.text()).toContain('JA!')
   })
-  it('renders English copy on the /en prefix', async () => {
+  // One row per language, so a new locale is exercised as soon as it is registered.
+  it.each(localeCases)('renders $locale copy at $path', async ({ path, locale }) => {
     stubFetchResolving(weatherResponse(19))
 
-    const { wrapper } = await mountWithRouter('/en/Eindhoven')
+    const { wrapper } = await mountWithRouter(path)
 
-    expect(wrapper.text()).toContain('YES!')
-    expect(wrapper.text()).not.toContain('JA!')
+    expect(wrapper.text()).toContain(MESSAGES[locale].verdict.yes)
+    expect(wrapper.text()).toContain(MESSAGES[locale].stats.wind)
   })
 
-  it('translates the weather description from the numeric code per language', async () => {
+  it.each(localeCases)(
+    'translates the weather description from the numeric code in $locale',
+    async ({ path, locale }) => {
+      stubFetchResolving(weatherResponse(19))
+
+      const { wrapper } = await mountWithRouter(path)
+
+      expect(wrapper.text()).toContain(MESSAGES[locale].weatherCode.c0)
+    },
+  )
+
+  it.each(localeCases)(
+    'asks the backend for place names in $locale',
+    async ({ path, locale }) => {
+      stubFetchResolving(weatherResponse(19))
+
+      await mountWithRouter(path)
+
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining(`lang=${locale}`))
+    },
+  )
+
+  it.each(['/Amsterdam', '/Enschede', '/Espanola'])(
+    'keeps %s on the Dutch location route rather than reading it as a prefix',
+    async (path) => {
+      stubFetchResolving(weatherResponse(19))
+
+      const { router } = await mountWithRouter(path)
+
+      expect(router.currentRoute.value.name).toBe('location')
+    },
+  )
+
+  it.each(SUPPORTED_LOCALES.filter((locale) => locale !== 'nl'))(
+    'switches to %s via the picker, preserving the location and refetching',
+    async (locale) => {
+      stubFetchResolving(weatherResponse(19))
+
+      const { wrapper, router } = await mountWithRouter('/Eindhoven', {
+        withLanguageGuard: true,
+      })
+      vi.mocked(fetch).mockClear()
+
+      await wrapper.find('.lang-trigger').trigger('click')
+      // Targeted by locale: find() would otherwise just take the first option.
+      await wrapper.find(`.lang-option[data-locale="${locale}"]`).trigger('click')
+      await flushPromises()
+
+      expect(router.currentRoute.value.path).toBe(`/${locale}/Eindhoven`)
+      expect(fetch).toHaveBeenCalledTimes(1)
+      expect(fetch).toHaveBeenCalledWith(expect.stringContaining(`lang=${locale}`))
+    },
+  )
+
+  it('shows only a flag on the picker trigger, never the locale code', async () => {
     stubFetchResolving(weatherResponse(19))
 
-    const { wrapper: dutch } = await mountWithRouter('/Eindhoven')
-    expect(dutch.text()).toContain('Helderblauwe lucht')
+    const { wrapper } = await mountWithRouter('/Eindhoven')
+    const trigger = wrapper.find('.lang-trigger')
 
-    const { wrapper: english } = await mountWithRouter('/en/Eindhoven')
-    expect(english.text()).toContain('Clear blue sky')
+    expect(trigger.text()).toContain(LOCALE_FLAGS.nl)
+    expect(trigger.text()).not.toContain('NL')
+    // The flag is aria-hidden, so the accessible name has to carry the language.
+    expect(trigger.attributes('aria-label')).toContain(LOCALE_NAMES.nl)
   })
 
-  it('asks the backend for place names in the active language', async () => {
+  it('offers every supported language in the picker', async () => {
     stubFetchResolving(weatherResponse(19))
 
-    await mountWithRouter('/en/Eindhoven')
+    const { wrapper } = await mountWithRouter('/Eindhoven')
+    await wrapper.find('.lang-trigger').trigger('click')
 
-    expect(fetch).toHaveBeenCalledWith(expect.stringContaining('lang=en'))
-  })
+    const offered = wrapper
+      .findAll('.lang-option')
+      .map((option) => option.attributes('data-locale'))
 
-  it('keeps a location named like no language prefix on the Dutch route', async () => {
-    stubFetchResolving(weatherResponse(19))
-
-    const { router } = await mountWithRouter('/Amsterdam')
-
-    expect(router.currentRoute.value.name).toBe('location')
-    expect(router.currentRoute.value.params.location).toBe('Amsterdam')
-  })
-
-  it('switches language via the toggle, preserving the location and refetching', async () => {
-    stubFetchResolving(weatherResponse(19))
-
-    const { wrapper, router } = await mountWithRouter('/Eindhoven', { withLanguageGuard: true })
-    vi.mocked(fetch).mockClear()
-
-    await wrapper.find('.lang-toggle').trigger('click')
-    await flushPromises()
-
-    expect(router.currentRoute.value.path).toBe('/en/Eindhoven')
-    expect(fetch).toHaveBeenCalledTimes(1)
+    expect(offered).toEqual([...SUPPORTED_LOCALES])
   })
 
   it('encodes multi-word locations in the request URL', async () => {

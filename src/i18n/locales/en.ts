@@ -45,7 +45,7 @@ export const en: MessageSchema = {
   ],
   a11y: {
     preferences: 'Preferences',
-    switchLanguage: 'Schakel over naar Nederlands',
+    language: 'Language',
   },
   weatherCode: {
     c0: 'Clear blue sky',
