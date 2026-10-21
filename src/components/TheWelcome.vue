@@ -1,14 +1,18 @@
 <script setup lang="ts">
 import {computed, onMounted, ref, Ref, watch} from 'vue'
+import {useI18n} from 'vue-i18n'
 import LoadingWave from "@/components/Loading-wave.vue";
 import {useRoute, useRouter} from "vue-router";
 import {getStoredValue, setStoredValue} from "@/utils/storage";
 import {weatherCodeToEmoji} from "@/utils/weatherIcons";
+import {DEFAULT_LOCALE, type Locale} from "@/i18n";
+import {localeRoute} from "@/router/localeRoute";
 
 interface WeatherCurrent {
   temperature_2m: number
   apparent_temperature: number
   windspeed_10m: number
+  weathercode: number | null
 }
 
 interface WeatherCurrentUnits {
@@ -36,15 +40,6 @@ const TEMP_PREFERENCE_STORAGE_KEY = "tempPreference";
 const DEFAULT_THRESHOLD = 8;
 const MIN_PREFERENCE = -3;
 const MAX_PREFERENCE = 3;
-const PREFERENCE_LABELS = [
-  "🥶 Heel snel koud",
-  "🥶 Snel koud",
-  "❄️ Iets sneller koud",
-  "😊 Gemiddeld",
-  "☀️ Iets sneller warm",
-  "🥵 Snel warm",
-  "🥵 Heel snel warm",
-];
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
@@ -52,6 +47,11 @@ function clamp(value: number, min: number, max: number): number {
 
 const route = useRoute();
 const router = useRouter();
+const {t, te, locale, tm} = useI18n();
+
+const currentLocale = computed<Locale>(() => locale.value as Locale)
+const otherLocale = computed<Locale>(() => (currentLocale.value === 'en' ? 'nl' : 'en'))
+
 const initialLocation = Array.isArray(route.params.location) ? route.params.location[0] : route.params.location;
 const rememberedLocation = getStoredValue(LOCATION_STORAGE_KEY);
 const location: Ref<string> = ref(initialLocation || rememberedLocation || "");
@@ -59,8 +59,9 @@ const location: Ref<string> = ref(initialLocation || rememberedLocation || "");
 const apiBaseUrl: string = import.meta.env.VITE_API_BASE_URL;
 
 const fullFetchUri = computed(() => {
-  const baseUrl = `${apiBaseUrl}/kortebroekinfo`;
-  return location.value ? `${baseUrl}/?location=${location.value}` : baseUrl;
+  const params = new URLSearchParams({lang: currentLocale.value});
+  if (location.value) params.set("location", location.value);
+  return `${apiBaseUrl}/kortebroekinfo?${params.toString()}`;
 });
 
 const weatherData = ref<WeatherForecast | null>(null)
@@ -79,14 +80,35 @@ const temperaturePreference: Ref<number> = ref(
 )
 
 const effectiveThreshold = computed(() => DEFAULT_THRESHOLD - temperaturePreference.value)
-const preferenceLabel = computed(() => PREFERENCE_LABELS[temperaturePreference.value + 3])
-const weatherEmoji = computed(() => weatherCodeToEmoji(weatherCodeString.value))
+const preferenceLabel = computed(() => {
+  const labels = tm('preferenceLabels') as unknown as string[]
+  return labels[temperaturePreference.value + 3]
+})
+const weatherEmoji = computed(() => weatherCodeToEmoji(weatherData.value?.current?.weathercode))
+
+// The backend still sends a Dutch description; we only fall back to it when the
+// numeric code is missing and the UI happens to be Dutch anyway.
+const weatherDescription = computed(() => {
+  const code = weatherData.value?.current?.weathercode
+  if (code == null) {
+    return currentLocale.value === DEFAULT_LOCALE ? weatherCodeString.value : null
+  }
+  const key = `weatherCode.c${code}` as 'weatherCode.unknown'
+  return te(key) ? t(key) : t('weatherCode.unknown')
+})
+
 const canWearShorts = computed(() =>
     weatherData.value?.current != null && weatherData.value.current.apparent_temperature >= effectiveThreshold.value
 )
 const showTemperatureHint = computed(() => !hasStoredTemperaturePreference && !settingsOpenedOnce.value)
 const hasVerdict = computed(() => successful.value === true && weatherData.value?.current != null)
 const skyIcon = computed(() => (hasVerdict.value && !canWearShorts.value) ? '❄️' : '☀️')
+
+// Built from the URL rather than from `location`, which may hold a remembered
+// value that was never in the address bar.
+const otherLanguageRoute = computed(() =>
+    localeRoute(otherLocale.value, String(route.params.location ?? ""))
+)
 
 function toggleSettings() {
   showSettings.value = !showSettings.value;
@@ -106,7 +128,13 @@ onMounted(() => {
   GetWeather();
 })
 
-watch(location, () => {
+// All four routes render this component, so navigating between them patches
+// rather than remounts: these watchers are what refetch, not onMounted.
+watch(() => route.params.location, (value) => {
+  location.value = (Array.isArray(value) ? value[0] : value) ?? "";
+})
+
+watch([location, locale], () => {
   if (location.value) {
     setStoredValue(LOCATION_STORAGE_KEY, location.value)
   }
@@ -143,7 +171,7 @@ function GetWeather() {
 
 function RedirectToLocationUri() {
   location.value = locationInput.value;
-  router.push({name: 'location', params: {location: locationInput.value}})
+  router.push(localeRoute(currentLocale.value, locationInput.value))
 }
 
 function checkIfEnter(event: KeyboardEvent) {
@@ -164,17 +192,17 @@ function checkIfEnter(event: KeyboardEvent) {
 
     <div class="hero">
       <img
-          src="/man-running-emoji-258749.png" alt="man-running-emoji-with-short-pants"
+          src="/man-running-emoji-258749.png" :alt="t('hero.mascotAlt')"
           class="mascot">
 
-      <h1>Kan ik in korte broek rennen?</h1>
+      <h1>{{ t('hero.title') }}</h1>
       <h3 v-if="locationDisplayName" class="location-name">
         <span class="location-icon" aria-hidden="true">📍</span>
         <span>{{ locationDisplayName }}</span>
       </h3>
       <div class="search-bar">
-        <input v-model="locationInput" type="text" placeholder="Zoek een locatie" @keyup="checkIfEnter" />
-        <button @click="RedirectToLocationUri">Zoek</button>
+        <input v-model="locationInput" type="text" :placeholder="t('hero.searchPlaceholder')" @keyup="checkIfEnter" />
+        <button @click="RedirectToLocationUri">{{ t('hero.searchButton') }}</button>
       </div>
     </div>
 
@@ -184,9 +212,9 @@ function checkIfEnter(event: KeyboardEvent) {
         <div class="verdict-wrapper">
           <div class="verdict-emoji">{{ canWearShorts ? '🩳' : '🥶' }}</div>
           <div class="verdict-text" :class="canWearShorts ? 'verdict-yes' : 'verdict-no'">
-            <h2 v-if="canWearShorts">JA!</h2>
-            <h2 v-else>Nee!</h2>
-            <p>{{ canWearShorts ? 'Trek je KORTE broek aan.' : 'Trek je LANGE broek aan.' }}</p>
+            <h2 v-if="canWearShorts">{{ t('verdict.yes') }}</h2>
+            <h2 v-else>{{ t('verdict.no') }}</h2>
+            <p>{{ canWearShorts ? t('verdict.yesSubtitle') : t('verdict.noSubtitle') }}</p>
           </div>
         </div>
 
@@ -194,50 +222,56 @@ function checkIfEnter(event: KeyboardEvent) {
           <div class="stats-grid">
             <div class="stat-card">
               <div class="stat-icon">🌡️</div>
-              <div class="stat-label">Temperatuur</div>
+              <div class="stat-label">{{ t('stats.temperature') }}</div>
               <div class="stat-value">{{ weatherData.current.temperature_2m }}{{ weatherData.current_units.temperature_2m }}</div>
             </div>
             <div class="stat-card">
               <div class="stat-icon">🤔🌡️</div>
-              <div class="stat-label">Gevoelstemperatuur</div>
+              <div class="stat-label">{{ t('stats.apparentTemperature') }}</div>
               <div class="stat-value">{{ weatherData.current.apparent_temperature }}{{ weatherData.current_units.apparent_temperature }}</div>
             </div>
             <div class="stat-card">
               <div class="stat-icon">💨</div>
-              <div class="stat-label">Wind</div>
+              <div class="stat-label">{{ t('stats.wind') }}</div>
               <div class="stat-value">{{ weatherData.current.windspeed_10m }} {{ weatherData.current_units.windspeed_10m }}</div>
             </div>
-            <div v-if="weatherCodeString" class="stat-card">
+            <div v-if="weatherDescription" class="stat-card">
               <div class="stat-icon">{{ weatherEmoji }}</div>
-              <div class="stat-label">Beschrijving</div>
-              <div class="stat-value">{{ weatherCodeString }}</div>
+              <div class="stat-label">{{ t('stats.description') }}</div>
+              <div class="stat-value">{{ weatherDescription }}</div>
             </div>
           </div>
         </div>
       </div>
       <div v-else class="error-card">
-        <h3>Helaas...</h3>
-        <p>Er is iets mis gegaan</p>
+        <h3>{{ t('error.title') }}</h3>
+        <p>{{ t('error.body') }}</p>
       </div>
     </div>
 
     <div class="settings-area">
       <div v-if="showTemperatureHint" class="hint-bubble" role="status">
-        Stel hier je temperatuurgevoel in 👉
+        {{ t('settings.hint') }}
       </div>
       <button
           class="settings-toggle"
           :aria-expanded="showSettings"
-          aria-label="Voorkeuren"
+          :aria-label="t('a11y.preferences')"
           @click="toggleSettings">
         <span class="settings-icon">⚙️</span>
         <span v-if="showTemperatureHint" class="hint-dot" aria-hidden="true"></span>
       </button>
+      <router-link
+          class="lang-toggle"
+          :to="otherLanguageRoute"
+          :lang="otherLocale"
+          :hreflang="otherLocale"
+          :aria-label="t('a11y.switchLanguage')">{{ otherLocale.toUpperCase() }}</router-link>
     </div>
 
     <div v-if="showSettings" class="settings-panel">
-      <h3>Jouw voorkeuren</h3>
-      <label for="tempPreference">Heb jij het snel koud of snel warm?</label>
+      <h3>{{ t('settings.title') }}</h3>
+      <label for="tempPreference">{{ t('settings.question') }}</label>
       <input
           id="tempPreference"
           v-model.number="temperaturePreference"
@@ -246,8 +280,8 @@ function checkIfEnter(event: KeyboardEvent) {
           :max="MAX_PREFERENCE"
           step="1" />
       <div class="pref-label">{{ preferenceLabel }}</div>
-      <div class="pref-hint">Korte broek vanaf {{ effectiveThreshold }}°C gevoelstemperatuur</div>
-      <p class="pref-note">Dit onthouden we alleen lokaal in je browser (localStorage, geen tracking).</p>
+      <div class="pref-hint">{{ t('settings.threshold', { degrees: effectiveThreshold }) }}</div>
+      <p class="pref-note">{{ t('settings.note') }}</p>
     </div>
   </div>
 </template>
@@ -575,6 +609,24 @@ h1 {
   display: flex;
   align-items: center;
   gap: 0.6rem;
+}
+
+.lang-toggle {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 3rem;
+  height: 3rem;
+  padding: 0 0.6rem;
+  border-radius: 999px;
+  background: var(--color-background-soft);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  color: inherit;
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.04em;
+  text-decoration: none;
 }
 
 .settings-toggle {

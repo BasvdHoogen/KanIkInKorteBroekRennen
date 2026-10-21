@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import {useI18n} from 'vue-i18n'
 
+const {t} = useI18n()
 </script>
 
 <template>
@@ -18,7 +20,7 @@
     <div class="wave"></div>
     <div class="wave"></div>
   </div>
-  <div>We laden het weerbericht...</div>
+  <div>{{ t('loading') }}</div>
   </div>
 </template>
 
