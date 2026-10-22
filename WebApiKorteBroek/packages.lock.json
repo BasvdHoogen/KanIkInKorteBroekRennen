@@ -13,9 +13,9 @@
       },
       "OpenMeteo.dotnet.client.sdk": {
         "type": "Direct",
-        "requested": "[5.10.1, )",
-        "resolved": "5.10.1",
-        "contentHash": "Wu3r6TW6fwvCNjI6DXf0fTRzlVrBQupGMKmCISBHWzLZXEz/unSXCyNEoGOv8v7h9u+nayQs6+FyJHJ953mhEA==",
+        "requested": "[5.11.0, )",
+        "resolved": "5.11.0",
+        "contentHash": "4LLG+sbhOnMg82M3WLANPLDnoT02eNC+9KCkKJJKU2OtTQ8n9oouGL6BXHaP2PqkIvWRIHK39vImYkXpYOQu0g==",
         "dependencies": {
           "ProjNET": "2.1.0",
           "openmeteo_sdk": "1.27.2"
