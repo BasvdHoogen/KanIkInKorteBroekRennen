@@ -13,12 +13,12 @@
       },
       "OpenMeteo.dotnet.client.sdk": {
         "type": "Direct",
-        "requested": "[5.10.1, )",
-        "resolved": "5.10.1",
-        "contentHash": "Wu3r6TW6fwvCNjI6DXf0fTRzlVrBQupGMKmCISBHWzLZXEz/unSXCyNEoGOv8v7h9u+nayQs6+FyJHJ953mhEA==",
+        "requested": "[5.12.4, )",
+        "resolved": "5.12.4",
+        "contentHash": "6cu6tOGFsxUXbe3oCAYu0moXCdUv7zIv5WJTLHSEcbVFvGmFao/J6W3cgO1D/YInvXv/bYFDPN71yLbxZM3jig==",
         "dependencies": {
           "ProjNET": "2.1.0",
-          "openmeteo_sdk": "1.27.2"
+          "openmeteo_sdk": "1.30.0"
         }
       },
       "Swashbuckle.AspNetCore": {
@@ -50,8 +50,8 @@
       },
       "openmeteo_sdk": {
         "type": "Transitive",
-        "resolved": "1.27.2",
-        "contentHash": "IQBPDNxcY75KC6ty6UHQTdXOIPBrYoPh/w3+i5gKd9dwoMH5AEQpvfvq1v9brTpe2CD/W23kHhnLnBnQ6cFzGg==",
+        "resolved": "1.30.0",
+        "contentHash": "+LBXbw2rC9PS+kyb/A22hELW9q6DbFCm+S9msnZUnlUWYvYtnTN0nDh3cUrxavoRj8o8aup2Njwza1FtdR8Rjg==",
         "dependencies": {
           "Google.FlatBuffers": "25.2.10"
         }
